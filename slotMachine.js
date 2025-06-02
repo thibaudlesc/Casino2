@@ -13,7 +13,7 @@ const SYMBOL_WEIGHTS = { // Adjust weights for volatility and rarity of scatter
     '💎': 0.15,
     '7️⃣': 0.10, // Higher payout
     'BAR': 0.07, // Highest payout for BAR combinations
-    '⭐': 0.05  // Scatter for Free Spins
+    '⭐': 0.05 // Scatter for Free Spins
 };
 
 // Payout table for 3-row, 5-reel slot machine (per active payline)
@@ -30,8 +30,8 @@ const PAYTABLE = {
 
 // Define the paylines (indices of symbols on the grid)
 const PAYLINES = [
-    [0, 1, 2, 3, 4],    // Top Row
-    [5, 6, 7, 8, 9],    // Middle Row
+    [0, 1, 2, 3, 4],     // Top Row
+    [5, 6, 7, 8, 9],     // Middle Row
     [10, 11, 12, 13, 14] // Bottom Row
 ];
 
@@ -297,7 +297,12 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
     let newFreeSpins = 0;
     const winningElementsIndices = new Set();
 
-    // Check each defined payline
+    // Helper to add winning indices
+    const addWinningIndices = (indices) => {
+        indices.forEach(idx => winningElementsIndices.add(idx));
+    };
+
+    // 1. Check each defined payline (horizontal wins)
     PAYLINES.forEach(paylineIndices => {
         const lineSymbols = paylineIndices.map(idx => finalSymbolsGrid[idx]);
 
@@ -321,21 +326,21 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
                 if (winData.payout) {
                     totalPayout += betPerSpin * winData.payout;
                     for (let i = 0; i < currentCount; i++) {
-                        winningElementsIndices.add(paylineIndices[i]); // Add symbols that formed the win
+                        addWinningIndices([paylineIndices[i]]); // Add symbols that formed the win
                     }
                 }
                 // Free spins can be triggered by line wins if defined in PAYTABLE (though usually for scatters)
                 if (winData.freeSpins) {
                     newFreeSpins += winData.freeSpins;
                     for (let i = 0; i < currentCount; i++) {
-                         winningElementsIndices.add(paylineIndices[i]);
+                        addWinningIndices([paylineIndices[i]]);
                     }
                 }
             }
         }
     });
 
-    // Check for scatter wins (any 3+ Star symbols anywhere on the grid)
+    // 2. Check for scatter wins (any 3+ Star symbols anywhere on the grid)
     const scatterSymbol = '⭐';
     let scatterCount = 0;
     const scatterIndices = [];
@@ -350,8 +355,57 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
         const scatterPayouts = PAYTABLE[scatterSymbol];
         if (scatterPayouts && scatterPayouts[scatterCount] && scatterPayouts[scatterCount].freeSpins) {
             newFreeSpins += scatterPayouts[scatterCount].freeSpins;
-            scatterIndices.forEach(idx => winningElementsIndices.add(idx)); // Highlight all scatters
+            addWinningIndices(scatterIndices); // Highlight all scatters
         }
+    }
+
+    // --- NEW RULES ---
+
+    // 3. More than 4 of the same item (anywhere on the grid) - x0.4 the bet
+    const symbolCounts = {};
+    finalSymbolsGrid.forEach(symbol => {
+        symbolCounts[symbol] = (symbolCounts[symbol] || 0) + 1;
+    });
+
+    for (const symbol in symbolCounts) {
+        if (symbolCounts[symbol] >= 4) {
+            totalPayout += betPerSpin * 0.3;
+            // Optionally highlight all occurrences of this symbol
+            finalSymbolsGrid.forEach((s, idx) => {
+                if (s === symbol) {
+                    winningElementsIndices.add(idx);
+                }
+            });
+            // If the rule is "more than 4", meaning 5 or more, adjust the condition.
+            // For "plus de 4" (more than 4), it means >= 5.
+            // If you meant "4 or more", then >= 4 is correct. I'll use >=4 as per your code.
+        }
+    }
+
+    // 4. Full column of the same item - x0.45 the bet
+    for (let reel = 0; reel < NUM_REELS; reel++) {
+        const colSymbols = [
+            finalSymbolsGrid[reel],             // Top row of this reel
+            finalSymbolsGrid[reel + NUM_REELS], // Middle row of this reel
+            finalSymbolsGrid[reel + NUM_REELS * 2]  // Bottom row of this reel
+        ];
+        if (colSymbols[0] === colSymbols[1] && colSymbols[1] === colSymbols[2]) {
+            totalPayout += betPerSpin * 0.35;
+            addWinningIndices([reel, reel + NUM_REELS, reel + NUM_REELS * 2]);
+        }
+    }
+
+    // 5. Diagonal (top-left to bottom-right) - x0.2 the bet
+    // Indices for the main diagonal: 0, 6, 12
+    const diagonalSymbols = [
+        finalSymbolsGrid[0],  // Top-left
+        finalSymbolsGrid[6],  // Middle-middle
+        finalSymbolsGrid[12] // Bottom-right
+    ];
+
+    if (diagonalSymbols[0] === diagonalSymbols[1] && diagonalSymbols[1] === diagonalSymbols[2]) {
+        totalPayout += betPerSpin * 0.2;
+        addWinningIndices([0, 6, 12]);
     }
 
     return {

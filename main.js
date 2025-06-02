@@ -1,5 +1,5 @@
 // Variables globales partagées
-let balance = 100; // Solde de départ
+let balance = 1000; // Solde de départ
 let currentGame = null; // Suivre le jeu actuel
 
 // Fonction pour générer le HTML des chiffres 0-9 pour chaque slot (utilisé par la machine à sous)
@@ -34,5 +34,5 @@ function updateBalanceDisplay() {
 // Initialisation de l'interface utilisateur au chargement du DOM
 document.addEventListener('DOMContentLoaded', showMainMenu);
 
-// Ces fonctions (startSlotMachine, startRoulette, startBlackjack) seront définies dans leurs fichiers respectifs
-// et seront appelées globalement via onclick.
+// Ces fonctions (startSlotMachine, startRoulette, startBlackjack) sont définies dans leurs fichiers respectifs
+// et sont appelées via les boutons du menu principal.

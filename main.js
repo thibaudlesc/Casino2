@@ -18,7 +18,7 @@ function showMainMenu() {
         <h2>Choisissez un jeu</h2>
         <button onclick="startSlotMachine()">Machine à Sous</button>
         <button onclick="startRoulette()">Roulette</button>
-        <p>Solde actuel : <span id="current-balance">${balance}</span> €</p>
+        <button onclick="startBlackjack()">Blackjack</button> <p>Solde actuel : <span id="current-balance">${balance}</span> €</p>
     `;
     updateBalanceDisplay(); // Met à jour l'affichage du solde
 }
@@ -34,6 +34,5 @@ function updateBalanceDisplay() {
 // Initialisation de l'interface utilisateur au chargement du DOM
 document.addEventListener('DOMContentLoaded', showMainMenu);
 
-// Ces fonctions (startSlotMachine, startRoulette) seront définies dans leurs fichiers respectifs
-// et seront appelées globalement via onclick. Pour que cela fonctionne, assurez-vous que
-// slotMachine.js et roulette.js sont chargés APRÈS main.js dans votre HTML.
+// Ces fonctions (startSlotMachine, startRoulette, startBlackjack) seront définies dans leurs fichiers respectifs
+// et seront appelées globalement via onclick.

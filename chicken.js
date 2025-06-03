@@ -12,7 +12,7 @@ let chickenGameActive = false; // Indique si une partie est en cours
 const GRID_SIZE = 25; // 5x5 grid
 const NUM_ROWS_CHICKEN = 5;
 const NUM_COLS_CHICKEN = 5;
-const SYMBOL_CHICKEN = '🐔';
+const SYMBOL_CHICKEN = '🍗';
 const SYMBOL_BONE = '🦴';
 const SYMBOL_QUESTION = ''; // Le point d'interrogation est géré par CSS ::before
 

@@ -1,0 +1,153 @@
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Orbitron:wght@700&display=swap');
+
+/* General Body and Layout */
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(to right, #6c5ce7, #a06ef4);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background-color: rgba(0, 0, 0, 0.4);
+    padding: 30px 40px;
+    border-radius: 25px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 90%;
+    animation: fadeIn 1s ease-out;
+    margin: 20px;
+    position: relative;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Typography */
+h1, h2 {
+    font-family: 'Orbitron', sans-serif;
+    color: gold;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+p {
+    font-size: 1.1em;
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* Buttons */
+button {
+    background-color: #a06ef4;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    margin: 10px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+button:hover {
+    background-color: #b48cfb;
+    transform: translateY(-2px);
+}
+
+button:disabled {
+    background-color: #777;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Inputs */
+input {
+    padding: 10px 15px;
+    margin: 15px 10px;
+    border-radius: 10px;
+    border: 2px solid #a06ef4;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333;
+    font-size: 1em;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+input:focus {
+    border-color: #b48cfb;
+}
+
+/* Floating Win Numbers (General) */
+.floating-win-number-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.floating-win-number {
+    position: absolute;
+    font-size: 2.5em;
+    font-weight: bold;
+    color: gold;
+    text-shadow: 0 0 10px #ffea00, 0 0 20px #ffea00;
+    opacity: 0;
+    animation: floatAndFade 2s ease-out forwards;
+    white-space: nowrap;
+}
+
+@keyframes floatAndFade {
+    0% {
+        transform: translate(var(--start-x), var(--start-y)) scale(0.5);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+        transform: translate(var(--start-x), var(--start-y)) scale(1);
+    }
+    100% {
+        transform: translate(calc(var(--start-x) + var(--end-offset-x)), calc(var(--start-y) - 150px)) scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* Gain Text Animations (General) */
+.gain-text {
+    font-size: 3.5em;
+    color: gold;
+    text-shadow: 0 0 10px #ffea00, 0 0 20px #ffea00, 0 0 30px #ffea00;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.gain-text.win-animation {
+    animation: blink 1s step-end infinite, bounce-in 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
+@keyframes bounce-in {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}

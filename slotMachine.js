@@ -368,7 +368,7 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
     });
 
     for (const symbol in symbolCounts) {
-        if (symbolCounts[symbol] >= 4) {
+        if (symbolCounts[symbol] >= 5) {
             totalPayout += betPerSpin * 0.3;
             // Optionally highlight all occurrences of this symbol
             finalSymbolsGrid.forEach((s, idx) => {
@@ -390,7 +390,7 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
             finalSymbolsGrid[reel + NUM_REELS * 2]  // Bottom row of this reel
         ];
         if (colSymbols[0] === colSymbols[1] && colSymbols[1] === colSymbols[2]) {
-            totalPayout += betPerSpin * 0.35;
+            totalPayout += betPerSpin * 0.15;
             addWinningIndices([reel, reel + NUM_REELS, reel + NUM_REELS * 2]);
         }
     }
@@ -404,7 +404,7 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
     ];
 
     if (diagonalSymbols[0] === diagonalSymbols[1] && diagonalSymbols[1] === diagonalSymbols[2]) {
-        totalPayout += betPerSpin * 0.2;
+        totalPayout += betPerSpin * 0.1;
         addWinningIndices([0, 6, 12]);
     }
 
@@ -457,7 +457,7 @@ function triggerConfetti(type, parentElement) {
         // Start from the top 20% of the parent element, slightly random
         const startTop = Math.random() * parentElement.offsetHeight * 0.2;
         // Random horizontal movement at the end
-        const randX = (Math.random() - 0.5) * 2; // -1 to 1
+        const randX = (Math.random() - 0.1) * 2; // -1 to 1
 
         confetti.style.setProperty('--start-left', `${startLeft}px`);
         confetti.style.setProperty('--start-top', `${startTop}px`);

@@ -8,14 +8,62 @@
     <link rel="stylesheet" href="slotMachine.css">
     <link rel="stylesheet" href="blackjack.css">
     <link rel="stylesheet" href="miniRoulette.css">
-    <link rel="stylesheet" href="chicken.css"> </head>
+    <link rel="stylesheet" href="chicken.css">
+    <style>
+        /* Styles pour la page de connexion */
+        #auth-container {
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 30px 40px;
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            animation: fadeIn 1s ease-out;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        #auth-container input {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            width: calc(100% - 22px); /* Padding + border */
+            margin-bottom: 10px;
+        }
+        #auth-container button {
+            width: 100%;
+            margin: 5px 0;
+        }
+        #auth-message {
+            color: #ff6b6b; /* Rouge pour les erreurs */
+            font-weight: bold;
+        }
+        .success-message {
+            color: #00ffaa !important; /* Vert pour le succès */
+        }
+    </style>
+</head>
 <body>
-    <div id="game-container">
+    <div id="auth-container">
+        <h2>Bienvenue au Casino !</h2>
+        <p>Veuillez vous connecter ou créer un compte.</p>
+        <input type="text" id="username-input" placeholder="Nom d'utilisateur">
+        <input type="password" id="password-input" placeholder="Mot de passe">
+        <button id="login-button" class="game-button">Se connecter</button>
+        <button id="register-button" class="game-button">Créer un compte</button>
+        <p id="auth-message"></p>
+    </div>
+
+    <div id="game-container" style="display: none;">
         </div>
 
     <script src="main.js"></script>
     <script src="slotMachine.js"></script>
     <script src="blackjack.js"></script>
     <script src="miniRoulette.js"></script>
-    <script src="chicken.js"></script> </body>
+    <script src="chicken.js"></script>
+</body>
 </html>

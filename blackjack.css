@@ -5,27 +5,30 @@
     align-items: center;
     margin-top: 20px;
     width: 100%;
-    background-color: #0d4a0d;
+    /* Softer, darker green for the table */
+    background-color: #1a472a; /* Darker, less vibrant green */
     padding: 20px;
     border-radius: 15px;
-    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+    /* More subtle inner shadow */
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05); /* Subtle border */
 }
 
 .blackjack-hand {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 12px; /* Slightly increased gap for cards */
+    margin-bottom: 25px;
     min-height: 120px;
 }
 
 .card {
-    background-color: white;
-    border: 1px solid #333;
-    border-radius: 8px;
-    width: 80px;
-    height: 110px;
+    background-color: #fcfcfc; /* Slightly off-white for cards */
+    border: 1px solid #a0a0a0; /* Softer card border */
+    border-radius: 6px; /* Slightly less rounded cards */
+    width: 85px; /* Slightly wider cards */
+    height: 120px; /* Proportionally taller */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -34,71 +37,95 @@
     font-weight: bold;
     color: #333;
     padding: 5px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+    /* Lighter, more subtle card shadow */
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
     position: relative;
     transition: transform 0.3s ease;
 }
 
 .card.hidden {
-    background-color: #c0392b;
+    /* Muted red for hidden card back */
+    background-color: #7b2a2a; /* Less saturated red */
     color: transparent;
-    border-color: #8e2c22;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-    background-image: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
-    background-size: 10px 10px;
+    border-color: #5c1f1f; /* Darker red border */
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.4); /* Softer inner shadow */
+    /* Pattern made more subtle */
+    background-image: linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%, transparent);
+    background-size: 12px 12px; /* Slightly larger pattern */
 }
 
 .card-value {
-    font-size: 1.5em;
+    font-size: 1.6em; /* Slightly larger value */
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
 }
 
-.card-suit-top {
-    font-size: 0.8em;
-    align-self: flex-start;
+.card-suit-top-left, .card-suit-bottom-right {
+    font-size: 1.1em;
 }
 
-.card-suit-bottom {
-    font-size: 0.8em;
-    align-self: flex-end;
-    transform: rotate(180deg);
+/* Adjust colors for suits for better contrast on cards */
+.card-suit-top-left.red, .card-suit-bottom-right.red {
+    color: #cc0000; /* Standard red for hearts/diamonds */
 }
 
-.red-suit {
-    color: #c0392b;
+.card-suit-top-left.black, .card-suit-bottom-right.black {
+    color: #333; /* Standard black for spades/clubs */
 }
 
-.black-suit {
-    color: #333;
-}
-
-#blackjack-controls {
-    margin-top: 20px;
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-#blackjack-bet-amount {
-    width: 80px;
-    margin: 0;
-}
-
-.blackjack-result {
-    font-size: 2em;
-    font-weight: bold;
-    color: gold;
-    text-shadow: 0 0 10px #ffea00;
-    margin-top: 20px;
-}
-
-.blackjack-score {
+/* Blackjack specific messages and scores */
+#blackjack-message {
     font-size: 1.3em;
-    margin-top: 5px;
     font-weight: bold;
-    color: #f0f0f0;
+    margin-top: 15px;
+    min-height: 30px;
+    text-align: center;
+    color: #e0f2f7; /* Consistent light text color */
+}
+
+#blackjack-current-bet, #dealer-score, #player-score {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #c9d2da; /* Softer text color */
+}
+
+/* Adjust bet input styling for consistency */
+#blackjack-bet-amount {
+    width: 100px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+/* Buttons for Blackjack game */
+.blackjack-actions button {
+    margin: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .card {
+        width: 70px;
+        height: 100px;
+        font-size: 1.1em;
+    }
+    .blackjack-hand {
+        gap: 8px;
+    }
+    #blackjack-container {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 400px) {
+    .card {
+        width: 60px;
+        height: 85px;
+        font-size: 1em;
+    }
+    .blackjack-hand {
+        gap: 5px;
+    }
 }

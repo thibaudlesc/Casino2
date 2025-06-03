@@ -34,7 +34,7 @@ function startChickenGame() {
 
         <div id="chicken-game-container">
             <div id="chicken-grid">
-                </div>
+            </div>
 
             <div id="chicken-stats">
                 <p>Multiplicateur actuel : x<span id="chicken-current-multiplier">${currentMultiplier.toFixed(2)}</span></p>
@@ -187,10 +187,8 @@ function handleChickenCellClick(event) {
         }
     }
 
-    // Disable clicks on all cells if game is over
-    if (!chickenGameActive) {
-        chickenGrid.forEach(cell => cell.element.classList.add('disabled'));
-    }
+    // Disable clicks on all cells if game is over (this was causing the issue with cashout)
+    // Removed this block, as endChickenGame already handles disabling cells and cashout.
 }
 
 /**
@@ -208,7 +206,7 @@ function calculateChickenMultiplier(chickensFound, numBones) {
 
     let multiplier = 1.00;
     const totalChickensInitial = GRID_SIZE - numBones; // Nombre total de poulets sur la grille
-    
+
     // Pour chaque poulet déjà trouvé, on calcule le multiplicateur pour ce "clic" spécifique
     // et on le multiplie avec le multiplicateur cumulé.
     for (let i = 1; i <= chickensFound; i++) {
@@ -225,11 +223,11 @@ function calculateChickenMultiplier(chickensFound, numBones) {
         // et rendre le jeu plus intéressant, surtout avec beaucoup d'os.
         // Plus le facteur est proche de 1, plus les gains sont élevés.
         const amplificationFactor = 0.96; // Ajustez cette valeur pour contrôler la force des multiplicateurs
-                                          // Une valeur plus petite (ex: 0.90) rend les multiplicateurs plus faibles
-                                          // Une valeur plus grande (ex: 0.99) les rend plus forts
+                                         // Une valeur plus petite (ex: 0.90) rend les multiplicateurs plus faibles
+                                         // Une valeur plus grande (ex: 0.99) les rend plus forts
 
         let clickMultiplier = 1 / probabilityOfFindingChicken * amplificationFactor;
-        
+
         // Appliquer un plancher pour éviter des multiplicateurs trop petits au début
         // Ou un plafond si les gains sont trop élevés.
         clickMultiplier = Math.max(clickMultiplier, 1.02); // Chaque clic doit au moins donner un petit gain
@@ -256,17 +254,17 @@ function cashOutChickenGame() {
     const winnings = chickenBet * currentMultiplier;
     balance += winnings;
     updateBalanceDisplay();
-    showFloatingWinNumbers(winnings, document.getElementById('chicken-game-container'));
+    // showFloatingWinNumbers(winnings, document.getElementById('chicken-game-container')); // Ensure this function is defined globally (e.g., in main.js)
     document.getElementById('chicken-message').textContent = `Vous encaissez ${winnings.toFixed(2)} € !`;
     document.getElementById('chicken-message').classList.add('chicken-win-text');
-    endChickenGame(winnings);
+    endChickenGame(winnings); // This will disable the cashout button
 }
 
 // Termine la partie de Chicken
 function endChickenGame(winnings) {
     chickenGameActive = false;
     document.getElementById('chicken-play-button').disabled = false;
-    document.getElementById('chicken-cashout-button').disabled = true;
+    document.getElementById('chicken-cashout-button').disabled = true; // Disabled here after the game ends
     document.getElementById('chicken-bet-amount').disabled = false;
     document.getElementById('chicken-bones-input').disabled = false;
 

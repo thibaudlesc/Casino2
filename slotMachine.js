@@ -3,6 +3,8 @@ let freeSpins = 0;
 let lastBetAmount = 0; // Store the bet amount from when free spins were awarded
 const NUM_REELS = 5;
 const NUM_ROWS = 3;
+let autoSpinInterval = null; // Variable to hold the interval for auto-spin
+let isSpinning = false; // Flag to prevent multiple spins during animation
 
 // Définition des symboles et de leurs poids pour la volatilité (simplifiée)
 const SYMBOLS = ['🍒', '🍊', '🔔', '💎', '7️⃣', 'BAR', '⭐']; // Added '⭐' for Scatter
@@ -30,8 +32,8 @@ const PAYTABLE = {
 
 // Define the paylines (indices of symbols on the grid)
 const PAYLINES = [
-    [0, 1, 2, 3, 4],     // Top Row
-    [5, 6, 7, 8, 9],     // Middle Row
+    [0, 1, 2, 3, 4],       // Top Row
+    [5, 6, 7, 8, 9],       // Middle Row
     [10, 11, 12, 13, 14] // Bottom Row
 ];
 
@@ -75,6 +77,7 @@ function startSlotMachine() {
         <p>Tours Gratuits : <span id="free-spins-display">${freeSpins}</span></p>
         <input type="number" id="bet-input" value="10" min="1">
         <button id="spin-button" onclick="spinSlots()">Lancer</button>
+        <button id="auto-spin-button" onclick="toggleAutoSpin()">Auto Spin</button>
         <button onclick="showMainMenu()">Retour</button>
     `;
     updateBalanceDisplay();
@@ -95,6 +98,8 @@ function updateFreeSpinsDisplay() {
 function updateSlotMachineMode() {
     const slotsGrid = document.getElementById('slots-grid');
     const betInput = document.getElementById('bet-input');
+    const autoSpinButton = document.getElementById('auto-spin-button');
+
     if (slotsGrid) {
         if (freeSpins > 0) {
             slotsGrid.classList.add('slot-machine-free-spin-mode');
@@ -102,46 +107,102 @@ function updateSlotMachineMode() {
                 betInput.disabled = true; // Disable bet input during free spins
                 betInput.value = lastBetAmount; // Ensure bet is set to last won bet
             }
+            if (autoSpinButton) {
+                autoSpinButton.disabled = true; // Disable auto-spin during free spins
+            }
         } else {
             slotsGrid.classList.remove('slot-machine-free-spin-mode');
             if (betInput) {
                 betInput.disabled = false; // Enable bet input when no free spins
             }
+            if (autoSpinButton) {
+                autoSpinButton.disabled = false; // Enable auto-spin when no free spins
+            }
         }
     }
 }
 
+// Function to toggle auto-spin
+function toggleAutoSpin() {
+    const autoSpinButton = document.getElementById('auto-spin-button');
+    const spinButton = document.getElementById('spin-button');
+    const betInput = document.getElementById('bet-input');
+
+    if (autoSpinInterval) {
+        // Stop auto-spin
+        clearInterval(autoSpinInterval);
+        autoSpinInterval = null;
+        autoSpinButton.textContent = 'Auto Spin';
+        spinButton.disabled = false;
+        betInput.disabled = false;
+    } else {
+        // Start auto-spin
+        autoSpinButton.textContent = 'Arrêter Auto Spin';
+        spinButton.disabled = true; // Disable manual spin button
+        betInput.disabled = true; // Disable bet input
+
+        // Start the first spin immediately
+        spinSlots();
+
+        // Set up interval for subsequent spins
+        autoSpinInterval = setInterval(async () => {
+            // Check conditions before spinning again
+            const currentBet = parseInt(betInput.value);
+            if (balance < currentBet && freeSpins === 0) {
+                toggleAutoSpin(); // Stop auto-spin if balance is insufficient
+                alert("Solde insuffisant pour continuer l'auto-spin !");
+                return;
+            }
+            if (!isSpinning) { // Only spin if not currently spinning
+                await spinSlots();
+            }
+        }, 3000); // Check every 3 seconds for next spin
+    }
+}
+
+
 // Function to spin the slots
 async function spinSlots() {
+    if (isSpinning) return; // Prevent multiple calls while spinning
+    isSpinning = true;
+
     const betInput = document.getElementById('bet-input');
     const spinButton = document.getElementById('spin-button');
+    const autoSpinButton = document.getElementById('auto-spin-button');
     const slotsGrid = document.getElementById('slots-grid');
     const gameContainer = document.getElementById('game-container');
     let bet = parseInt(betInput.value);
 
     let isFreeSpinRound = (freeSpins > 0);
 
-    // If it's a free spin round, use the stored bet amount
     if (isFreeSpinRound) {
         freeSpins--;
-        bet = lastBetAmount; // Use the bet from when free spins were awarded
+        bet = lastBetAmount;
         updateFreeSpinsDisplay();
     } else {
         if (isNaN(bet) || bet <= 0) {
             alert("Veuillez entrer une mise valide (nombre entier positif).");
+            toggleAutoSpin(); // Stop auto-spin if bet is invalid
+            isSpinning = false;
             return;
         }
-        lastBetAmount = bet; // Store the current bet for future free spins
+        lastBetAmount = bet;
         const totalBetCost = bet;
 
         if (balance < totalBetCost) {
             alert("Solde insuffisant pour cette mise !");
+            toggleAutoSpin(); // Stop auto-spin if balance is insufficient
+            isSpinning = false;
             return;
         }
     }
 
+    // Disable buttons during the spin animation
     spinButton.disabled = true;
-    betInput.disabled = true; // Disable bet input during spin
+    betInput.disabled = true;
+    if (autoSpinInterval) {
+        autoSpinButton.disabled = true;
+    }
 
     if (!isFreeSpinRound) {
         balance -= bet;
@@ -180,50 +241,31 @@ async function spinSlots() {
     const spinPromises = Array.from(slotSymbolStrips).map((strip, index) => {
         return new Promise(resolve => {
             const targetSymbol = finalSymbolsGrid[index];
-            // Find the index of the target symbol in the SYMBOLS array
             const targetSymbolIndexInSymbolsArray = SYMBOLS.indexOf(targetSymbol);
 
-            // Calculate the position to stop the strip at, ensuring the target symbol is visible
-            // We want the target symbol to align with the middle of the slot,
-            // or rather, for simplicity, just show up correctly at the top visible position.
-            // Given that each symbol span is 110px high and strip has 50 symbols,
-            // we calculate the translateY to land on the correct symbol.
-            // We add a few full cycles (SYMBOLS.length * X * symbolHeight) to make it look like a spin.
             const totalSymbolsInStrip = SYMBOLS.length;
-            const extraSpins = 3; // Ensure it spins enough times
+            const extraSpins = 3;
             const finalStopPosition = (extraSpins * totalSymbolsInStrip * symbolHeight) + (targetSymbolIndexInSymbolsArray * symbolHeight);
 
-            strip.style.transition = 'none'; // Clear any previous transition
-            strip.style.transform = `translateY(0px)`; // Reset position
-            void strip.offsetWidth; // Force reflow for reset to take effect
+            strip.style.transition = 'none';
+            strip.style.transform = `translateY(0px)`;
+            void strip.offsetWidth;
 
-            const delay = index * 100; // Stagger reels start/stop
-            strip.style.transition = `transform ${totalSpinDuration + delay}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`; // Smoother ease-out
+            const delay = index * 100;
+            strip.style.transition = `transform ${totalSpinDuration + delay}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
 
-            // Apply the final transform
             strip.style.transform = `translateY(-${finalStopPosition}px)`;
 
             setTimeout(() => {
                 slotElements[index].classList.remove('spinning');
-                // Snap to the correct visual position for the *actual* symbol on the grid
-                // This means the symbol should be visible at the top of the slot element.
-                // The strip should end with the target symbol at its "top" visible position.
-                // Since our strip contains multiple copies, we just need to ensure the final
-                // symbol displayed is correct. The animation ends with `finalStopPosition`.
-                // If we want the first row to align to the 0th index, the second to the 1st etc.
-                // (which is common in slot machine visuals), we'd need to adjust target index.
-                // For a 3-row display where the top symbol is what we care about,
-                // the final `transform` will effectively show the symbol at `targetSymbolIndexInSymbolsArray`.
-                // However, since we generated a long strip, the symbol at the visual
-                // position `targetSymbolIndexInSymbolsArray` will be `finalSymbolsGrid[index]`.
-                // The current `finalStopPosition` should land it correctly.
                 resolve();
             }, totalSpinDuration + delay);
         });
     });
 
-    await Promise.all(spinPromises);
+    await Promise.all(spinPromises); // Wait for all reels to stop
 
+    // After reels stop, calculate payout
     const result = calculatePayout(finalSymbolsGrid, bet);
     let totalPayout = result.totalPayout;
     let newFreeSpinsEarned = result.newFreeSpins;
@@ -231,10 +273,10 @@ async function spinSlots() {
 
     if (newFreeSpinsEarned > 0 && slotsGrid) {
         slotsGrid.classList.add('slot-machine-new-free-spins');
-        triggerConfetti('new-free-spins', gameContainer); // Pass main gameContainer for confetti
+        triggerConfetti('new-free-spins', gameContainer);
         setTimeout(() => {
             slotsGrid.classList.remove('slot-machine-new-free-spins');
-        }, 600); // Remove burst class after quick animation
+        }, 600);
     }
 
     balance += totalPayout;
@@ -242,7 +284,7 @@ async function spinSlots() {
 
     updateBalanceDisplay();
     updateFreeSpinsDisplay();
-    updateSlotMachineMode(); // Update mode for free spin glow and bet input state
+    updateSlotMachineMode();
 
     gainText.textContent = `Gain : ${totalPayout} €`;
     if (totalPayout > 0 || newFreeSpinsEarned > 0) {
@@ -251,18 +293,16 @@ async function spinSlots() {
         const isBigWin = totalPayout >= (bet * 10) || newFreeSpinsEarned > 0;
         if (isBigWin && slotsGrid) {
             slotsGrid.classList.add('slot-machine-big-win');
-            triggerConfetti('big-win', gameContainer); // Trigger confetti for big wins
+            triggerConfetti('big-win', gameContainer);
             setTimeout(() => {
                 slotsGrid.classList.remove('slot-machine-big-win');
-            }, 2000); // Remove big win animation after a short delay
+            }, 2000);
         }
 
-        // Trigger floating win numbers if there's a monetary payout
         if (totalPayout > 0) {
-            triggerFloatingWinNumbers(totalPayout, gameContainer); // Pass gameContainer for numbers
+            triggerFloatingWinNumbers(totalPayout, gameContainer);
         }
 
-        // Highlight winning slots
         winningElementsIndices.forEach(idx => {
             if (slotElements[idx]) {
                 slotElements[idx].classList.add('pop');
@@ -271,23 +311,30 @@ async function spinSlots() {
 
         setTimeout(() => {
             slotElements.forEach(slotEl => slotEl.classList.remove('pop'));
-            // Remove text animation after its cycle (if not already removed by blink)
             gainText.classList.remove('win-animation');
-        }, 1500); // Increased duration to match bounce-in animation
-
+        }, 1500);
     }
 
-    if (freeSpins > 0) {
-        setTimeout(() => {
-            spinSlots(); // Auto-spin for free spins
-        }, 2500); // Delay before next free spin
-    } else {
-        spinButton.disabled = false;
-        // Re-enable bet input only if not in free spin mode
-        if (freeSpins === 0) {
-            betInput.disabled = false;
+    // This is where the 3-second delay *after* the result display happens
+    setTimeout(() => {
+        isSpinning = false; // Reset the spinning flag after the delay
+        // Re-enable buttons if not in auto-spin or if auto-spin finished free spins
+        if (!autoSpinInterval) { // If auto-spin is not active
+            spinButton.disabled = false;
+            if (freeSpins === 0) { // Only re-enable bet input if no free spins left
+                betInput.disabled = false;
+            }
+        } else { // If auto-spin is active, and free spins are done, ensure button is re-enabled
+            if (freeSpins === 0) {
+                autoSpinButton.disabled = false;
+            }
+            // For auto-spin, the interval itself will trigger the next spin, no need for direct call here
         }
-    }
+    }, 3000); // This is the 3-second pause after results are shown
+
+    // If it's a free spin round, we don't need to re-enable buttons here,
+    // the next spin will be triggered by the freeSpins logic after its own delay.
+    // If it's an auto-spin, the setInterval will handle the next spin.
 }
 
 
@@ -368,8 +415,8 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
     });
 
     for (const symbol in symbolCounts) {
-        if (symbolCounts[symbol] >= 5) {
-            totalPayout += betPerSpin * 0.3;
+        if (symbolCounts[symbol] >= 4) {
+            totalPayout += betPerSpin * 0.4;
             // Optionally highlight all occurrences of this symbol
             finalSymbolsGrid.forEach((s, idx) => {
                 if (s === symbol) {
@@ -390,7 +437,7 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
             finalSymbolsGrid[reel + NUM_REELS * 2]  // Bottom row of this reel
         ];
         if (colSymbols[0] === colSymbols[1] && colSymbols[1] === colSymbols[2]) {
-            totalPayout += betPerSpin * 0.15;
+            totalPayout += betPerSpin * 0.25;
             addWinningIndices([reel, reel + NUM_REELS, reel + NUM_REELS * 2]);
         }
     }

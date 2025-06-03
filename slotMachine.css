@@ -9,10 +9,12 @@
     flex-direction: column;
     gap: 15px;
     transition: all 0.5s ease-in-out;
-    width: fit-content; /* Keep this for centering if flex-direction is row */
+    width: fit-content;
     position: relative;
     /* Added for responsiveness */
-    max-width: 95%; /* Prevent grid from overflowing on very small screens */
+    /* Remove max-width: 95%; if you want to allow overflow on very small screens,
+       or manage overflow with overflow-x: auto on a parent container.
+       Keeping it might still force wrapping on very small screens if slots are too big. */
     box-sizing: border-box; /* Include padding in width calculation */
 }
 
@@ -20,9 +22,20 @@
     display: flex;
     justify-content: center;
     gap: 15px;
-    /* Added for responsiveness */
-    flex-wrap: wrap; /* Allow slots to wrap to the next line on smaller screens */
+    /* MODIFICATION CLÉ: Empêche le retour à la ligne */
+    flex-wrap: nowrap; /* Forces all slots to stay on one line */
+    /* Ajouté: permet le défilement horizontal si les slots débordent */
+    overflow-x: auto; /* Adds horizontal scroll if content overflows */
+    -webkit-overflow-scrolling: touch; /* Improves scrolling on iOS devices */
+    /* Optionally, hide scrollbar if it's purely for layout consistency */
+    scrollbar-width: none; /* For Firefox */
+    -ms-overflow-style: none;  /* For Internet Explorer and Edge */
 }
+
+.slot-row::-webkit-scrollbar { /* For Chrome, Safari, Opera */
+    display: none;
+}
+
 
 .slot {
     width: 90px;
@@ -34,8 +47,8 @@
     border: 4px solid #b48cfb;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
-    /* Added for responsiveness */
-    flex-shrink: 0; /* Prevent slots from shrinking too much */
+    /* MODIFICATION CLÉ: Empêche le shrinking */
+    flex-shrink: 0; /* Ensures slots maintain their defined width and do not shrink */
 }
 
 .slot-symbol-strip {
@@ -175,20 +188,22 @@
     #slots-grid {
         padding: 15px;
         gap: 10px;
+        /* Allow grid to potentially overflow horizontally if necessary */
+        max-width: 100%; /* Ensure it takes full available width */
     }
     .slot-row {
         gap: 10px;
     }
     .slot {
-        width: 70px; /* Smaller slot size for tablets */
-        height: 85px;
+        width: 65px; /* Slightly smaller slot size for tablets to fit better */
+        height: 80px;
         border-width: 3px;
     }
     .slot-symbol-strip {
-        font-size: 2em; /* Adjusted symbol font size for tablets */
+        font-size: 1.8em; /* Adjusted symbol font size for tablets */
     }
     .slot-symbol-strip span {
-        height: 85px; /* Adjust symbol height to match new slot height */
+        height: 80px; /* Adjust symbol height to match new slot height */
     }
 }
 
@@ -196,21 +211,23 @@
     #slots-grid {
         padding: 10px;
         gap: 8px;
+        /* Allow grid to potentially overflow horizontally if necessary */
+        max-width: 100%;
     }
     .slot-row {
         gap: 8px;
     }
     .slot {
-        width: 55px; /* Even smaller slot size for phones */
-        height: 65px;
+        width: 50px; /* Even smaller slot size for phones */
+        height: 60px;
         border-width: 2px;
         border-radius: 10px;
     }
     .slot-symbol-strip {
-        font-size: 1.5em; /* Further adjusted symbol font size for phones */
+        font-size: 1.3em; /* Further adjusted symbol font size for phones */
     }
     .slot-symbol-strip span {
-        height: 65px; /* Adjust symbol height to match new slot height */
+        height: 60px; /* Adjust symbol height to match new slot height */
     }
 
     /* Adjust button and input sizes within the slot machine game */

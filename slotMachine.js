@@ -13,7 +13,7 @@ const SYMBOL_WEIGHTS = { // Adjust weights for volatility and rarity of scatter
     '🍊': 0.20,
     '🔔': 0.18,
     '💎': 0.15,
-    '7️⃣': 0.10, // Higher payout
+    '7️⃣': 0.11, // Higher payout
     'BAR': 0.07, // Highest payout for BAR combinations
     '⭐': 0.05 // Scatter for Free Spins
 };
@@ -156,7 +156,7 @@ function toggleAutoSpin() {
             if (!isSpinning) { // Only spin if not currently spinning
                 await spinSlots();
             }
-        }, 3000); // Check every 3 seconds for next spin
+        }, 1000); // Check every 3 seconds for next spin
     }
 }
 
@@ -416,7 +416,7 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
 
     for (const symbol in symbolCounts) {
         if (symbolCounts[symbol] >= 4) {
-            totalPayout += betPerSpin * 0.4;
+            totalPayout += betPerSpin * 0.25;
             // Optionally highlight all occurrences of this symbol
             finalSymbolsGrid.forEach((s, idx) => {
                 if (s === symbol) {
@@ -574,5 +574,5 @@ function triggerFloatingWinNumbers(amount, parentElement) {
         if (floatingContainer) {
             floatingContainer.remove();
         }
-    }, 2500); // Ensure this matches the longest floating number animation duration + delay
+    }, 4500); // Ensure this matches the longest floating number animation duration + delay
 }

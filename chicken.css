@@ -14,6 +14,7 @@
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.06); /* Bordure subtile, cohérente */
+    box-sizing: border-box; /* Ensure padding is included in width */
 }
 
 #chicken-grid {
@@ -23,167 +24,118 @@
     gap: 8px; /* Rétabli à 8px pour l'harmonie avec mes propositions précédentes */
     width: 100%;
     max-width: 500px; /* Taille maximale de la grille */
-    aspect-ratio: 1 / 1; /* Assure que la grille est carrée */
+    aspect-ratio: 1 / 1; /* Maintient la grille carrée */
     margin-bottom: 20px;
 }
 
 .chicken-cell {
     width: 100%;
-    position: relative;
-    /* Nouvelle couleur des cases non révélées - gris-bleu muté, comme les cellules de pari de la roulette */
-    background-color: #3e4c5b;
-    border-radius: 8px; /* Rétabli à 8px pour l'harmonie avec mes propositions précédentes */
-    cursor: pointer;
+    height: 100%;
+    background-color: #3f5161; /* Fond des cases non révélées */
+    border-radius: 8px; /* Coins légèrement arrondis */
     display: flex;
     justify-content: center;
     align-items: center;
-    font-weight: bold; /* Appliqué ici pour le '?' */
-    color: #fff; /* Sera surchargé par ::before */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Ombre douce, cohérente */
-    transition: all 0.2s ease-in-out;
-    user-select: none;
-    -webkit-user-select: none; /* Safari */
-    -moz-user-select: none; /* Firefox */
-    -ms-user-select: none; /* IE10+ */
-    overflow: hidden; /* Empêche le contenu de déborder, important */
+    font-size: 2.5em; /* Grande taille pour le symbole */
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden; /* Important pour cacher le contenu initial */
+    user-select: none; /* Empêche la sélection de texte */
 }
 
-/* Style pour le point d'interrogation sur les cases non révélées */
-.chicken-cell.unrevealed::before {
-    content: '?';
-    position: absolute; /* Positionné absolument par rapport à la cellule */
+.chicken-cell::before {
+    content: '?'; /* Point d'interrogation par défaut */
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1em; /* Taille relative au font-size de la cellule */
+    position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%); /* Centrage parfait */
-    font-size: 2.5em; /* Taille du point d'interrogation */
-    /* Couleur du point d'interrogation - cohérente avec le texte des titres */
-    color: #e0f2f7; /* Couleur claire, similaire aux titres */
-    transition: opacity 0.2s ease, font-size 0.2s ease; /* Animation d'apparition/disparition si la classe est changée */
+    transform: translate(-50%, -50%);
+    transition: opacity 0.2s ease;
 }
 
-.chicken-cell.unrevealed:hover::before {
-    /* Un peu plus visible au survol - utilisant la couleur de texte de paragraphe plus claire */
+.chicken-cell.revealed::before {
+    opacity: 0; /* Cache le point d'interrogation une fois révélé */
+}
+
+.chicken-cell.unrevealed:hover {
+    background-color: #4a5d6e; /* Effet hover pour les cases non révélées */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.chicken-cell.revealed {
+    cursor: default; /* Pas de curseur de pointeur après révélation */
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3); /* Ombre interne après révélation */
+}
+
+.chicken-cell.chicken {
+    background-color: #6edc88; /* Vert clair pour le poulet */
+    color: #1a472a; /* Couleur de texte plus foncée pour le poulet */
+    animation: cellRevealGlow 0.5s ease-out forwards;
+}
+
+.chicken-cell.bone {
+    background-color: #e67c7c; /* Rouge doux pour l'os */
+    color: #7b2a2a; /* Couleur de texte plus foncée pour l'os */
+    animation: cellRevealGlow 0.5s ease-out forwards;
+}
+
+.chicken-cell.disabled {
+    pointer-events: none; /* Empêche tout clic après désactivation */
+    opacity: 0.8;
+}
+
+@keyframes cellRevealGlow {
+    from {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Zone de contrôle du jeu */
+.chicken-controls {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping for smaller screens */
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.chicken-controls label {
+    font-weight: bold;
     color: #c9d2da;
 }
 
-.chicken-cell:hover:not(.revealed):not(.disabled) {
-    transform: translateY(-2px); /* Légèrement moins de déplacement pour plus de subtilité */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Ombre cohérente */
-    /* Légèrement plus clair au survol, comme les cellules de pari de la roulette */
-    background-color: #5c6c7b;
-}
-
-/* Styles pour les cellules révélées */
-.chicken-cell.revealed {
-    cursor: default;
-    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.4); /* Ombre interne cohérente */
-    pointer-events: none; /* Empêche les clics après révélation */
-}
-
-.chicken-cell.revealed.chicken {
-    /* Vert pour le poulet - couleur de gain harmonisée */
-    background-color: #00ffaa; /* Le vert frais et accrocheur utilisé pour les gains */
-    color: #333; /* Couleur de texte pour les symboles (si ce n'est pas un emoji) */
-}
-
-.chicken-cell.revealed.bone {
-    /* Rouge pour l'os - couleur de perte harmonisée */
-    background-color: #ff6b6b; /* Le rouge plus doux utilisé pour les pertes */
-    color: #333;
-    animation: shake 0.5s ease-in-out; /* Animation quand on trouve un os */
-}
-
-@keyframes shake {
-    0% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    50% { transform: translateX(5px); }
-    75% { transform: translateX(-5px); }
-    100% { transform: translateX(0); }
-}
-
-/* Désactivation des cellules (quand le jeu n'est pas en cours) */
-.chicken-cell.disabled {
-    pointer-events: none;
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-/* Styles pour les symboles d'emoji (poulet et os) une fois révélés */
-.chicken-cell span {
-    font-size: 0em; /* Initialement, la taille de l'emoji est de 0, donc invisible */
-    line-height: 1;
-    position: absolute; /* Positionné absolument par rapport à la cellule */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Centrage parfait */
-    opacity: 0; /* Caché initiallement */
-    transition: font-size 0.2s ease, opacity 0.2s ease; /* Animation de la taille et de l'opacité */
-    display: inline-block; /* Nécessaire pour appliquer les transformations et la taille */
-    white-space: nowrap; /* Empêche l'emoji de se couper sur plusieurs lignes */
-}
-
-.chicken-cell.revealed span {
-    font-size: 1.8em; /* Taille souhaitée pour les emojis révélés (ajustez si besoin) */
-    opacity: 1; /* Apparaît une fois révélé */
-}
-
-
-/* Contrôles du jeu */
-#chicken-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    width: 100%;
-    margin-top: 20px;
-}
-
-.chicken-input-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap; /* Pour les petits écrans */
-}
-
 #chicken-bet-amount, #chicken-bones-input {
-    width: 80px;
-    padding: 10px 15px; /* Rétabli au padding des inputs de base.css */
-    border-radius: 8px;
-    /* Nouveau style pour les inputs, harmonisé avec base.css */
-    border: 1px solid #7a7a9a; /* Muted border color */
-    background-color: rgba(0, 0, 0, 0.2); /* Darker, more transparent input background */
-    color: #e0f2f7; /* Lighter text color */
-    font-size: 1.1em;
+    width: 80px; /* Adjusted width */
     text-align: center;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #f5f5f5;
 }
 
-#chicken-bet-amount:focus, #chicken-bones-input:focus {
-    outline: none;
-    /* Anneau de focus harmonisé avec base.css */
-    border-color: #8f8fd8; /* Highlight on focus */
-    box-shadow: 0 0 0 3px rgba(143, 143, 216, 0.3); /* Subtle glow on focus */
-}
-
-#chicken-bones-input {
-    width: 60px; /* Plus petit car c'est un nombre entre 1 et 24 */
-}
-
-/* Boutons de jeu */
+/* Buttons specific to Chicken game */
 #chicken-play-button {
-    /* Couleur du bouton "jouer" harmonisée avec les boutons "normaux" de base.css */
-    background-color: #5d5d81; /* Muted purple */
-}
-
-#chicken-cashout-button {
-    /* Couleur du bouton "encaisser" - un orange plus doux, mais toujours distinct */
-    background-color: #d19a66; /* Un orange-marron plus doux */
+    background-color: #7a6a9b; /* Consistent with base button, but can be themed */
 }
 
 #chicken-play-button:hover:not(:disabled) {
-    /* Hover harmonisé */
     background-color: #6a6a9b; /* Slightly lighter on hover */
+}
+
+#chicken-cashout-button {
+    background-color: #f39c12; /* Orange for cashout */
 }
 
 #chicken-cashout-button:hover:not(:disabled) {
@@ -216,25 +168,94 @@
     font-size: 1.2em;
     font-weight: bold;
     margin-bottom: 10px;
-    color: #e0f2f7; /* Couleur claire pour les informations de jeu */
+    color: #c9d2da; /* Softer text color */
 }
 
-/* Ajustements responsifs */
+/* Media Queries for Responsiveness */
+@media (max-width: 768px) {
+    #chicken-game-container {
+        padding: 20px;
+        max-width: 500px;
+    }
+
+    #chicken-grid {
+        gap: 6px; /* Reduce gap */
+        max-width: 400px; /* Smaller grid */
+    }
+
+    .chicken-cell {
+        font-size: 2em; /* Smaller symbols */
+    }
+
+    .chicken-controls {
+        flex-direction: column; /* Stack controls vertically */
+        gap: 10px;
+    }
+
+    .chicken-controls > div {
+        width: 100%; /* Make input/button groups full width */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+
+    #chicken-bet-amount, #chicken-bones-input {
+        width: 70px;
+        font-size: 0.9em;
+    }
+
+    #chicken-play-button, #chicken-cashout-button {
+        padding: 10px 20px;
+        font-size: 1em;
+        width: auto; /* Let content determine width */
+    }
+
+    .chicken-message {
+        font-size: 1.1em;
+    }
+
+    #chicken-current-multiplier, #chicken-potential-win {
+        font-size: 1.1em;
+    }
+}
+
 @media (max-width: 480px) {
     #chicken-game-container {
         padding: 15px;
-        border-radius: 15px;
+        max-width: 350px;
     }
+
     #chicken-grid {
-        gap: 6px; /* Ajusté pour petits écrans */
+        gap: 4px;
+        max-width: 300px; /* Even smaller grid */
     }
+
+    .chicken-cell {
+        font-size: 1.5em; /* Even smaller symbols */
+    }
+
+    .chicken-controls {
+        gap: 8px;
+    }
+
     #chicken-bet-amount, #chicken-bones-input {
-        width: 70px;
-        padding: 6px 10px;
-        font-size: 1em;
+        width: 60px;
+        font-size: 0.8em;
     }
-    .chicken-input-group {
-        flex-direction: column;
-        gap: 10px;
+
+    #chicken-play-button, #chicken-cashout-button {
+        padding: 8px 15px;
+        font-size: 0.9em;
+    }
+
+    .chicken-message {
+        font-size: 1em;
+        margin-top: 10px;
+        min-height: 20px;
+    }
+
+    #chicken-current-multiplier, #chicken-potential-win {
+        font-size: 1em;
     }
 }

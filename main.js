@@ -40,33 +40,22 @@ function handleLogin() {
     const passwordInput = document.getElementById('password-input').value;
     const authMessage = document.getElementById('auth-message');
 
-    authMessage.classList.remove('error-text', 'success-message');
+    const users = JSON.parse(localStorage.getItem('users')) || {};
 
-    if (!usernameInput || !passwordInput) {
-        authMessage.textContent = "Veuillez remplir tous les champs.";
-        authMessage.classList.add('error-text');
-        return;
-    }
-
-    const userData = JSON.parse(localStorage.getItem(usernameInput));
-
-    if (userData && userData.password === passwordInput) {
-        // Connexion réussie
+    if (users[usernameInput] && users[usernameInput].password === passwordInput) {
         currentUsername = usernameInput;
-        localStorage.setItem('loggedInUser', currentUsername); // Marquer l'utilisateur comme connecté
+        localStorage.setItem('loggedInUser', currentUsername);
         loadUserData(currentUsername);
         authMessage.textContent = "Connexion réussie !";
-        authMessage.classList.add('success-message');
-
+        authMessage.style.color = 'green';
         setTimeout(() => {
             document.getElementById('auth-container').style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
             showMainMenu();
         }, 1000);
-
     } else {
         authMessage.textContent = "Nom d'utilisateur ou mot de passe incorrect.";
-        authMessage.classList.add('error-text');
+        authMessage.style.color = 'red';
     }
 }
 
@@ -75,135 +64,96 @@ function handleRegister() {
     const passwordInput = document.getElementById('password-input').value;
     const authMessage = document.getElementById('auth-message');
 
-    authMessage.classList.remove('error-text', 'success-message');
-
-    if (!usernameInput || !passwordInput) {
-        authMessage.textContent = "Veuillez remplir tous les champs.";
-        authMessage.classList.add('error-text');
+    if (usernameInput.length < 3 || passwordInput.length < 3) {
+        authMessage.textContent = "Nom d'utilisateur et mot de passe doivent avoir au moins 3 caractères.";
+        authMessage.style.color = 'red';
         return;
     }
 
-    if (localStorage.getItem(usernameInput)) {
+    let users = JSON.parse(localStorage.getItem('users')) || {};
+
+    if (users[usernameInput]) {
         authMessage.textContent = "Ce nom d'utilisateur existe déjà.";
-        authMessage.classList.add('error-text');
-        return;
+        authMessage.style.color = 'red';
+    } else {
+        users[usernameInput] = { password: passwordInput, balance: 1000 }; // Nouveau compte avec 1000€
+        localStorage.setItem('users', JSON.stringify(users));
+        authMessage.textContent = "Compte créé avec succès ! Vous pouvez maintenant vous connecter.";
+        authMessage.style.color = 'green';
     }
-
-    // Créer un nouveau compte avec un solde de départ
-    const initialBalance = 1000;
-    const userData = {
-        password: passwordInput, // WARNING: Not hashed/salted, insecure for production
-        balance: initialBalance
-    };
-    localStorage.setItem(usernameInput, JSON.stringify(userData));
-
-    authMessage.textContent = `Compte "${usernameInput}" créé avec ${initialBalance} € ! Veuillez vous connecter.`;
-    authMessage.classList.add('success-message');
-
-    // Nettoyer les champs après l'inscription
-    document.getElementById('username-input').value = '';
-    document.getElementById('password-input').value = '';
 }
 
 function loadUserData(username) {
-    const userData = JSON.parse(localStorage.getItem(username));
-    if (userData) {
-        balance = userData.balance;
+    const users = JSON.parse(localStorage.getItem('users')) || {};
+    if (users[username]) {
+        balance = users[username].balance;
     } else {
-        // Ceci ne devrait pas arriver si l'utilisateur est "loggedInUser"
-        // Mais par sécurité, on peut réinitialiser ou rediriger
-        console.error("Erreur: Données utilisateur non trouvées pour " + username);
+        // Ceci ne devrait pas arriver si checkUserLoggedIn fonctionne correctement
         balance = 1000; // Fallback
+        users[username] = { password: '', balance: balance };
+        localStorage.setItem('users', JSON.stringify(users));
     }
     updateBalanceDisplay();
 }
 
 function saveUserData() {
     if (currentUsername) {
-        const userData = JSON.parse(localStorage.getItem(currentUsername));
-        if (userData) {
-            userData.balance = balance;
-            localStorage.setItem(currentUsername, JSON.stringify(userData));
+        let users = JSON.parse(localStorage.getItem('users')) || {};
+        if (users[currentUsername]) {
+            users[currentUsername].balance = balance;
+            localStorage.setItem('users', JSON.stringify(users));
         }
     }
 }
 
-// Fonction de déconnexion
-function logout() {
-    localStorage.removeItem('loggedInUser'); // Supprimer l'indicateur de connexion
-    currentUsername = null;
-    balance = 0; // Réinitialiser le solde
-    updateBalanceDisplay();
-
-    document.getElementById('game-container').innerHTML = ''; // Nettoyer le contenu du jeu
-    document.getElementById('game-container').style.display = 'none';
-    document.getElementById('auth-container').style.display = 'flex';
-    document.getElementById('auth-message').textContent = "Vous avez été déconnecté.";
-    document.getElementById('auth-message').classList.remove('error-text', 'success-message'); // Clear previous status
-    document.getElementById('auth-message').classList.add('success-message');
-}
-
-
-// --- Fonctions de Jeu (modifiées pour utiliser saveUserData) ---
-
-// Fonction pour générer le HTML des chiffres 0-9 pour chaque slot (utilisé par la machine à sous)
-function generateSlotNumbersHTML() {
-    let numbersHTML = '';
-    for (let i = 0; i < 10; i++) {
-        numbersHTML += `<span>${i}</span>`;
-    }
-    return numbersHTML;
-}
-
-// Fonction pour afficher le menu principal
-function showMainMenu() {
-    const gameContainer = document.getElementById('game-container');
-    gameContainer.innerHTML = `
-        <h2>Choisissez un jeu</h2>
-        <button onclick="startSlotMachine()">Machine à Sous</button>
-        <button onclick="startBlackjack()">Blackjack</button>
-        <button onclick="startMiniRoulette()">Roulette Américaine</button>
-        <button onclick="startChickenGame()">Jeu du Poulet</button>
-        <p>Solde actuel : <span id="current-balance">${balance}</span> €</p>
-        <button onclick="logout()" class="back-button" style="margin-top: 20px;">Déconnexion</button>
-    `;
-    updateBalanceDisplay(); // Met à jour l'affichage du solde
-}
-
-// Aide pour mettre à jour l'affichage du solde
 function updateBalanceDisplay() {
-    const balanceSpan = document.getElementById('current-balance');
-    if (balanceSpan) {
-        balanceSpan.textContent = balance.toFixed(2); // Afficher avec 2 décimales
-    }
+    document.getElementById('current-balance').textContent = balance.toFixed(2);
     saveUserData(); // Sauvegarder le solde à chaque mise à jour
 }
 
-// Fonction d'aide pour afficher les gains flottants
+// --- Fonctions de Navigation et d'Affichage des Jeux ---
+
+function showMainMenu() {
+    const gameContainer = document.getElementById('game-container');
+    gameContainer.innerHTML = `
+        <p>Solde : <span id="current-balance">${balance}</span> €</p>
+        <div class="main-menu">
+            <h1>Choisissez votre jeu</h1>
+            <div class="game-buttons">
+                <button class="game-button" onclick="startSlotMachine()">Machines à Sous</button>
+                <button class="game-button" onclick="startBlackjack()">Blackjack</button>
+                <button class="game-button" onclick="startMiniRoulette()">Mini Roulette</button>
+                <button class="game-button" onclick="startChickenGame()">Jeu du Poulet</button>
+            </div>
+        </div>
+        <button id="logout-button" class="game-button logout-button">Se déconnecter</button>
+    `;
+    document.getElementById('logout-button').addEventListener('click', handleLogout);
+    updateBalanceDisplay(); // Ensure balance is updated on main menu display
+    currentGame = null; // Reset current game
+}
+
+function handleLogout() {
+    localStorage.removeItem('loggedInUser');
+    currentUsername = null;
+    balance = 0;
+    document.getElementById('game-container').style.display = 'none';
+    document.getElementById('auth-container').style.display = 'flex';
+    document.getElementById('username-input').value = '';
+    document.getElementById('password-input').value = '';
+    document.getElementById('auth-message').textContent = 'Déconnecté.';
+    document.getElementById('auth-message').style.color = '#e0f2f7';
+}
+
+// --- Fonctions utilitaires partagées ---
+
+// Floating win numbers animation
 function showFloatingWinNumbers(amount, parentElement) {
-    if (amount <= 0) return;
-
-    const floatingContainer = document.querySelector('.floating-win-number-container');
-    if (!floatingContainer) {
-        const newContainer = document.createElement('div');
-        newContainer.classList.add('floating-win-number-container');
-        parentElement.style.position = 'relative'; // Ensure parent is positioned
-        parentElement.appendChild(newContainer);
-        // Place the container on top of existing content
-        newContainer.style.position = 'absolute';
-        newContainer.style.top = '0';
-        newContainer.style.left = '0';
-        newContainer.style.width = '100%';
-        newContainer.style.height = '100%';
-        newContainer.style.pointerEvents = 'none'; // Allow clicks on elements beneath
-        newContainer.style.zIndex = '100'; // Ensure it's above game elements
-    }
-
-    const containerToUse = floatingContainer || parentElement.querySelector('.floating-win-number-container');
-
-    const numNumbers = Math.min(Math.ceil(amount / 50), 5); // Max 5 numbers for large wins
+    const numNumbers = Math.min(5, Math.ceil(amount / 20)); // Max 5 numbers, more for larger wins
     const baseValue = Math.floor(amount / numNumbers);
     const remainingValue = amount % numNumbers;
+
+    const containerToUse = parentElement || document.body; // Use parentElement or body as fallback
 
     for (let i = 0; i < numNumbers; i++) {
         const numberSpan = document.createElement('span');
@@ -230,9 +180,8 @@ function showFloatingWinNumbers(amount, parentElement) {
     }
 
     setTimeout(() => {
-        containerToUse.innerHTML = ''; // Clear numbers after animation
-    }, 2500); // Should be slightly longer than animation duration
+        // Clear numbers after animation. Consider if this should clear only the ones added by this call.
+        // For simplicity, it clears all floating numbers within the container.
+        Array.from(containerToUse.getElementsByClassName('floating-win-number')).forEach(el => el.remove());
+    }, 2000); // Should match or exceed animation duration + delay
 }
-
-// Initialisation au chargement de la page (peut être supprimé car remplacé par DOMContentLoaded listener)
-// showMainMenu();

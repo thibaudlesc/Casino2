@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Casino Game</title>
+    <title>JEWBUZZ PRIME CASINO</title>
     <link rel="stylesheet" href="base.css">
     <link rel="stylesheet" href="slotMachine.css">
     <link rel="stylesheet" href="blackjack.css">
@@ -23,32 +23,76 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
+            box-sizing: border-box; /* Added for responsive padding */
+            width: 90%; /* Added for responsiveness */
         }
         #auth-container input {
             padding: 10px;
             border-radius: 8px;
             border: 1px solid #555;
             background-color: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            width: calc(100% - 22px); /* Padding + border */
-            margin-bottom: 10px;
+            color: #f5f5f5;
+            font-size: 1em;
+            margin-bottom: 15px;
+            width: calc(100% - 22px); /* Adjusted for padding and border */
+            max-width: 300px; /* Ensures it doesn't get too wide on larger screens */
+            box-sizing: border-box; /* Added for responsive width */
         }
         #auth-container button {
-            width: 100%;
-            margin: 5px 0;
+            padding: 10px 20px;
+            font-size: 1em;
+            margin: 5px auto; /* Center buttons */
+            width: auto; /* Let button content define width */
+            max-width: 200px; /* Limit button width */
         }
-        #auth-message {
-            color: #ff6b6b; /* Rouge pour les erreurs */
+
+        /* Responsive adjustments for auth container */
+        @media (max-width: 480px) {
+            #auth-container {
+                padding: 20px 25px; /* Smaller padding */
+                gap: 10px;
+            }
+            #auth-container input {
+                font-size: 0.9em;
+                padding: 8px;
+            }
+            #auth-container button {
+                font-size: 0.9em;
+                padding: 8px 15px;
+            }
+        }
+
+        /* Existing utility styles */
+        .hidden {
+            display: none !important;
+        }
+
+        .balance-display {
+            font-size: 1.2em;
             font-weight: bold;
+            color: #00ffaa;
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px rgba(0, 255, 170, 0.5);
         }
-        .success-message {
-            color: #00ffaa !important; /* Vert pour le succès */
+
+        .logout-button {
+            background-color: #e74c3c; /* Red color for logout */
+            margin-top: 30px;
+        }
+
+        .logout-button:hover:not(:disabled) {
+            background-color: #c0392b;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
     <div id="auth-container">
-        <h2>Bienvenue au Casino !</h2>
+        <h2>Bienvenue au JEWBUZZ PRIME CASINO !</h2>
         <p>Veuillez vous connecter ou créer un compte.</p>
         <input type="text" id="username-input" placeholder="Nom d'utilisateur">
         <input type="password" id="password-input" placeholder="Mot de passe">
@@ -57,8 +101,19 @@
         <p id="auth-message"></p>
     </div>
 
-    <div id="game-container" style="display: none;">
+    <div id="game-container" style="display:none;">
+        <p>Solde : <span id="current-balance">0</span> €</p>
+        <div class="main-menu">
+            <h1>Choisissez votre jeu</h1>
+            <div class="game-buttons">
+                <button class="game-button" onclick="startSlotMachine()">Machines à Sous</button>
+                <button class="game-button" onclick="startBlackjack()">Blackjack</button>
+                <button class="game-button" onclick="startMiniRoulette()">Mini Roulette</button>
+                <button class="game-button" onclick="startChickenGame()">Jeu du Poulet</button>
+            </div>
         </div>
+        <button id="logout-button" class="game-button logout-button">Se déconnecter</button>
+    </div>
 
     <script src="main.js"></script>
     <script src="slotMachine.js"></script>

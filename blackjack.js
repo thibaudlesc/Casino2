@@ -33,63 +33,66 @@ function startBlackjack() {
             <p id="blackjack-current-bet">Mise actuelle : 0 €</p>
 
             <div id="blackjack-controls">
-                <div class="bet-input-group">
-                    <label for="blackjack-bet-amount">Mise (€):</label>
+                <div class="bet-controls">
+                    <label for="blackjack-bet-amount">Mise : </label>
                     <input type="number" id="blackjack-bet-amount" value="10" min="1" step="1">
-                    <button id="blackjack-deal-button" class="game-button">DONNER</button>
                 </div>
-                <div class="game-actions">
-                    <button id="blackjack-hit-button" class="game-button" disabled>TIRER</button>
-                    <button id="blackjack-stand-button" class="game-button" disabled>RESTER</button>
-                    <button id="blackjack-double-button" class="game-button" disabled>DOUBLER</button>
+                <div class="blackjack-actions">
+                    <button id="blackjack-deal-button" class="game-button">Distribuer</button>
+                    <button id="blackjack-hit-button" class="game-button" disabled>Tirer</button>
+                    <button id="blackjack-stand-button" class="game-button" disabled>Rester</button>
                 </div>
             </div>
-            <button onclick="showMainMenu()" class="back-button">Retour au Menu</button>
         </div>
+        <button onclick="showMainMenu()" class="game-button">Retour au Menu</button>
     `;
 
-    updateBalanceDisplay();
-    setupBlackjackEventListeners();
-}
-
-// Setup event listeners for Blackjack game
-function setupBlackjackEventListeners() {
     document.getElementById('blackjack-deal-button').addEventListener('click', dealBlackjack);
     document.getElementById('blackjack-hit-button').addEventListener('click', playerHit);
     document.getElementById('blackjack-stand-button').addEventListener('click', playerStand);
-    document.getElementById('blackjack-double-button').addEventListener('click', playerDouble);
+
+    updateBalanceDisplay();
+    updateBlackjackBetDisplay();
 }
 
-// Create and shuffle a new deck
+// Function to create a new deck
 function createDeck() {
     deck = [];
     for (const suit of SUITS) {
         for (const rank of RANKS) {
-            deck.push({ suit, rank });
+            deck.push({ rank, suit });
         }
     }
-    // Shuffle the deck (Fisher-Yates algorithm)
-    for (let i = deck.length - 1; i > 0; i--) {
+    shuffleDeck(deck);
+}
+
+// Function to shuffle the deck
+function shuffleDeck(deckToShuffle) {
+    for (let i = deckToShuffle.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
+        [deckToShuffle[i], deckToShuffle[j]] = [deckToShuffle[j], deckToShuffle[i]];
     }
 }
 
-// Calculate hand value
-function getHandValue(hand) {
+// Function to get card value
+function getCardValue(card) {
+    if (card.rank === 'A') return 11;
+    if (['K', 'Q', 'J'].includes(card.rank)) return 10;
+    return parseInt(card.rank);
+}
+
+// Function to calculate hand value
+function calculateHandValue(hand) {
     let value = 0;
     let numAces = 0;
+
     for (const card of hand) {
+        value += getCardValue(card);
         if (card.rank === 'A') {
             numAces++;
-            value += 11;
-        } else if (['K', 'Q', 'J'].includes(card.rank)) {
-            value += 10;
-        } else {
-            value += parseInt(card.rank);
         }
     }
-    // Handle aces as 1 if busting
+
     while (value > 21 && numAces > 0) {
         value -= 10;
         numAces--;
@@ -97,171 +100,156 @@ function getHandValue(hand) {
     return value;
 }
 
-// Render cards in hand
-function renderHand(hand, handElementId, hideFirstCard = false) {
-    const handElement = document.getElementById(handElementId);
+// Function to display cards
+function displayHand(hand, elementId, isDealer = false) {
+    const handElement = document.getElementById(elementId);
     handElement.innerHTML = '';
     hand.forEach((card, index) => {
-        const cardDiv = document.createElement('div');
-        cardDiv.classList.add('card');
-        let cardValue = card.rank;
-        if (card.rank === 'J' || card.rank === 'Q' || card.rank === 'K') {
-            cardValue = card.rank; // Display J, Q, K
-        } else if (card.rank === 'A') {
-            cardValue = 'A'; // Display A
-        } else {
-            cardValue = card.rank; // Display number
-        }
+        const cardElement = document.createElement('div');
+        cardElement.classList.add('card');
 
-        const suitClass = (card.suit === '♥' || card.suit === '♦') ? 'red' : 'black';
-
-        // Add 'hidden' class to the second card of the dealer's hand if hideFirstCard is true
-        if (hideFirstCard && handElementId === 'dealer-hand' && index === 1) {
-            cardDiv.classList.add('hidden');
-            cardDiv.innerHTML = `<div class="card-value">?</div>`; // Show a question mark or similar
+        // If it's the dealer's second card and not the end of the game, hide it
+        if (isDealer && gameStarted && index === 1) {
+            cardElement.classList.add('facedown');
+            cardElement.innerHTML = `
+                <div class="card-back"></div>
+            `;
         } else {
-            cardDiv.innerHTML = `
-                <div class="card-suit-top-left ${suitClass}">${card.suit}</div>
-                <div class="card-value">${cardValue}</div>
-                <div class="card-suit-bottom-right ${suitClass}">${card.suit}</div>
+            const suitColorClass = (card.suit === '♥' || card.suit === '♦') ? 'red' : 'black';
+            cardElement.innerHTML = `
+                <div class="card-suit-top-left ${suitColorClass}">${card.suit}</div>
+                <div class="card-value">${card.rank}</div>
+                <div class="card-suit-bottom-right ${suitColorClass}">${card.suit}</div>
             `;
         }
-        handElement.appendChild(cardDiv);
+        handElement.appendChild(cardElement);
     });
+}
+
+// Function to update scores display
+function updateScores() {
+    document.getElementById('player-score').textContent = calculateHandValue(playerHand);
+    // Dealer's score is only fully revealed at the end of the game or if player busts
+    if (!gameStarted || calculateHandValue([dealerHand[0]]) === 21) { // Show full score if blackjack on deal for dealer
+         document.getElementById('dealer-score').textContent = calculateHandValue(dealerHand);
+    } else {
+        // If game is started and dealer's first card is revealed, show only that value
+        document.getElementById('dealer-score').textContent = calculateHandValue([dealerHand[0]]) + (gameStarted ? '+' : '');
+    }
+}
+
+// Function to update blackjack bet display
+function updateBlackjackBetDisplay() {
+    document.getElementById('blackjack-current-bet').textContent = `Mise actuelle : ${blackjackBet} €`;
 }
 
 // Deal initial cards
 function dealBlackjack() {
-    blackjackBet = parseFloat(document.getElementById('blackjack-bet-amount').value);
+    const betInput = document.getElementById('blackjack-bet-amount');
+    const bet = parseInt(betInput.value);
 
-    if (isNaN(blackjackBet) || blackjackBet <= 0 || blackjackBet > balance) {
-        document.getElementById('blackjack-message').textContent = "Mise invalide. Assurez-vous d'avoir suffisamment de fonds.";
+    if (isNaN(bet) || bet <= 0 || bet > balance) {
+        document.getElementById('blackjack-message').textContent = "Mise invalide. Veuillez entrer un montant valide.";
         return;
     }
 
+    blackjackBet = bet;
     balance -= blackjackBet;
     updateBalanceDisplay();
+    updateBlackjackBetDisplay();
 
     createDeck();
     playerHand = [];
     dealerHand = [];
+    document.getElementById('blackjack-message').textContent = "";
+
+    // Initial deal
+    playerHand.push(deck.pop());
+    dealerHand.push(deck.pop());
+    playerHand.push(deck.pop());
+    dealerHand.push(deck.pop());
+
+    displayHand(playerHand, 'player-hand');
+    displayHand(dealerHand, 'dealer-hand', true); // Hide dealer's second card
+    updateScores();
+
     gameStarted = true;
-
-    document.getElementById('blackjack-message').textContent = "Partie en cours...";
-    document.getElementById('blackjack-message').classList.remove('win-text', 'loss-text'); // Clear previous messages
-
-    // Deal two cards to player
-    playerHand.push(deck.pop());
-    playerHand.push(deck.pop());
-    renderHand(playerHand, 'player-hand');
-    document.getElementById('player-score').textContent = getHandValue(playerHand);
-
-    // Deal two cards to dealer, one hidden
-    dealerHand.push(deck.pop());
-    dealerHand.push(deck.pop());
-    // Modifié pour cacher la deuxième carte du croupier
-    renderHand(dealerHand, 'dealer-hand', true); // Pass true to hide the second card
-    // Le score du croupier ne montre que la première carte
-    document.getElementById('dealer-score').textContent = getHandValue([dealerHand[0]]);
-
-
-    // Disable bet input and Deal button
-    document.getElementById('blackjack-bet-amount').disabled = true;
+    betInput.disabled = true;
     document.getElementById('blackjack-deal-button').disabled = true;
-
-    // Enable player action buttons
     document.getElementById('blackjack-hit-button').disabled = false;
     document.getElementById('blackjack-stand-button').disabled = false;
 
-    // Enable double button if balance allows
-    document.getElementById('blackjack-double-button').disabled = (balance < blackjackBet);
+    checkInitialBlackjack();
+}
 
-    // Check for immediate blackjack
-    if (getHandValue(playerHand) === 21) {
-        document.getElementById('blackjack-message').textContent = "Blackjack !";
-        playerStand(); // Automatically stand and let dealer play
+function checkInitialBlackjack() {
+    const playerScore = calculateHandValue(playerHand);
+    const dealerScore = calculateHandValue(dealerHand);
+
+    if (playerScore === 21 && dealerScore === 21) {
+        document.getElementById('blackjack-message').textContent = "Double Blackjack! C'est une égalité.";
+        balance += blackjackBet; // Return the bet
+        updateBalanceDisplay();
+        endGameRound();
+    } else if (playerScore === 21) {
+        document.getElementById('blackjack-message').textContent = "Blackjack! Vous gagnez!";
+        balance += blackjackBet * 2.5; // 1.5x win + original bet
+        updateBalanceDisplay();
+        document.getElementById('blackjack-message').classList.add('win-text');
+        // showFloatingWinNumbers(blackjackBet * 1.5, document.getElementById('blackjack-container')); // Uncomment if showFloatingWinNumbers is available
+        setTimeout(() => {
+            document.getElementById('blackjack-message').classList.remove('win-text');
+        }, 1000);
+        endGameRound();
+    } else if (dealerScore === 21) {
+        document.getElementById('blackjack-message').textContent = "Croupier a Blackjack. Vous perdez.";
+        endGameRound();
     }
 }
 
 // Player chooses to hit
 function playerHit() {
     playerHand.push(deck.pop());
-    renderHand(playerHand, 'player-hand');
-    const playerScore = getHandValue(playerHand);
-    document.getElementById('player-score').textContent = playerScore;
+    displayHand(playerHand, 'player-hand');
+    updateScores();
 
-    if (playerScore > 21) {
-        document.getElementById('blackjack-message').textContent = "BUST! Vous perdez.";
-        document.getElementById('blackjack-message').classList.add('loss-text');
+    if (calculateHandValue(playerHand) > 21) {
+        document.getElementById('blackjack-message').textContent = "Vous avez BUST! Vous perdez.";
         endGameRound();
-    } else if (playerScore === 21) {
-        playerStand();
     }
 }
 
 // Player chooses to stand
 function playerStand() {
-    // Disable player action buttons
     document.getElementById('blackjack-hit-button').disabled = true;
     document.getElementById('blackjack-stand-button').disabled = true;
-    document.getElementById('blackjack-double-button').disabled = true;
 
-    // Révéler la carte cachée du croupier
-    renderHand(dealerHand, 'dealer-hand', false); // Render all cards, no longer hiding
+    // Reveal dealer's second card
+    displayHand(dealerHand, 'dealer-hand', false);
+    updateScores(); // Update dealer's score to show full value
 
     dealerTurn();
 }
 
-// Player chooses to double down
-function playerDouble() {
-    if (balance < blackjackBet) {
-        document.getElementById('blackjack-message').textContent = "Fonds insuffisants pour doubler !";
-        return;
-    }
-
-    balance -= blackjackBet; // Double the bet
-    blackjackBet *= 2;
-    updateBalanceDisplay();
-    document.getElementById('blackjack-current-bet').textContent = `Mise actuelle : ${blackjackBet} €`;
-
-    playerHand.push(deck.pop()); // Only one more card
-    renderHand(playerHand, 'player-hand');
-    const playerScore = getHandValue(playerHand);
-    document.getElementById('player-score').textContent = playerScore;
-
-    if (playerScore > 21) {
-        document.getElementById('blackjack-message').textContent = "BUST! Vous perdez.";
-        document.getElementById('blackjack-message').classList.add('loss-text');
-        endGameRound();
-    } else {
-        playerStand(); // Automatically stand after doubling
-    }
-}
-
-
-// Dealer's turn
+// Dealer's turn logic
 function dealerTurn() {
-    let dealerScore = getHandValue(dealerHand);
-    document.getElementById('dealer-score').textContent = dealerScore; // Update dealer score after revealing
+    let dealerScore = calculateHandValue(dealerHand);
 
-    // Delay dealer's actions for better user experience
-    const dealerInterval = setInterval(() => {
-        if (dealerScore < 17) {
-            dealerHand.push(deck.pop());
-            renderHand(dealerHand, 'dealer-hand');
-            dealerScore = getHandValue(dealerHand);
-            document.getElementById('dealer-score').textContent = dealerScore;
-        } else {
-            clearInterval(dealerInterval);
-            determineWinner();
-        }
-    }, 1000); // Dealer draws a card every second
+    // Dealer hits on 16 or less, stands on 17 or more
+    while (dealerScore < 17) {
+        dealerHand.push(deck.pop());
+        displayHand(dealerHand, 'dealer-hand', false);
+        dealerScore = calculateHandValue(dealerHand);
+        updateScores();
+    }
+
+    determineWinner();
 }
 
 // Determine the winner
 function determineWinner() {
-    const playerScore = getHandValue(playerHand);
-    const dealerScore = getHandValue(dealerHand);
+    const playerScore = calculateHandValue(playerHand);
+    const dealerScore = calculateHandValue(dealerHand);
     let message = "";
     let payout = 0;
 
@@ -298,7 +286,6 @@ function endGameRound() {
     gameStarted = false; // Reset game state
     document.getElementById('blackjack-bet-amount').disabled = false; // Re-enable bet input
     document.getElementById('blackjack-deal-button').disabled = false; // Re-enable deal button
-    document.getElementById('blackjack-hit-button').disabled = true;
-    document.getElementById('blackjack-stand-button').disabled = true;
-    document.getElementById('blackjack-double-button').disabled = true;
+    document.getElementById('blackjack-hit-button').disabled = true; // Disable hit button
+    document.getElementById('blackjack-stand-button').disabled = true; // Disable stand button
 }

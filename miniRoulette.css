@@ -10,6 +10,7 @@
     padding: 20px;
     border-radius: 15px;
     box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box; /* Ensure padding is included in width */
 }
 
 .roulette-wheel-wrapper {
@@ -30,239 +31,170 @@
 
 .roulette-wheel {
     position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    transition: transform 6s cubic-bezier(0.2, 0.8, 0.2, 1); /* Slower ease-out */
-    transform: rotate(0deg);
-    background: radial-gradient(circle at center, #333, #000); /* Darker center */
+    transition: transform 5s cubic-bezier(0.2, 0.8, 0.7, 1); /* Slower ease-out for realistic stop */
 }
 
-/* Base styles for individual segments */
+.wheel-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    transform: rotate(calc(var(--current-rotation, 0deg) + var(--spin-rotation, 0deg))); /* Apply rotation */
+    transition: transform 5s cubic-bezier(0.2, 0.8, 0.7, 1); /* Slower ease-out for realistic stop */
+}
+
 .wheel-segment {
     position: absolute;
+    top: 0;
+    right: 0;
     width: 50%;
     height: 50%;
-    transform-origin: 100% 100%; /* Pivot from bottom right corner */
-    box-sizing: border-box;
-    overflow: hidden; /* Hide parts of text outside segment */
-    border: 1px solid rgba(0, 0, 0, 0.1); /* Subtle borders */
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
+    transform-origin: 0% 100%;
 }
 
-/* Colors for segments with subtle gradients */
-.wheel-segment.red {
-    background: linear-gradient(to bottom right, #e74c3c, #c0392b);
-    border-color: #b03a2e;
-}
-.wheel-segment.black {
-    background: linear-gradient(to bottom right, #333, #1a1a1a);
-    border-color: #222;
-}
-.wheel-segment.green {
-    background: linear-gradient(to bottom right, #27ae60, #1e8449);
-    border-color: #167a3f;
-}
+/* Colors for segments - example, adjust based on actual numbers */
+.red-segment { background-color: #cc0000; }
+.black-segment { background-color: #333333; }
+.green-segment { background-color: #006400; }
 
-/* Number text on segments - this is the key to rotation */
-.wheel-segment .segment-number {
+.wheel-pointer {
     position: absolute;
-    top: 10px; /* Distance from the wheel's edge */
-    font-weight: bold;
-    color: white;
-    font-size: 1.1em; /* Adjusted font size */
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
-    /* No counter-rotation here for the number itself */
-}
-
-.roulette-pointer {
-    position: absolute;
-    top: -15px;
+    top: -15px; /* Position above the wheel */
     left: 50%;
     transform: translateX(-50%);
     width: 0;
     height: 0;
     border-left: 15px solid transparent;
     border-right: 15px solid transparent;
-    border-bottom: 25px solid #f1c40f; /* Slightly larger, more pronounced */
+    border-bottom: 25px solid #f39c12; /* Orange pointer */
     z-index: 10;
-    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
 }
 
-#roulette-result-message {
-    margin-top: 20px;
-    font-size: 1.6em;
-    font-weight: bold;
-    color: #fff;
-    min-height: 40px; /* Ensure space for messages */
-}
-
-.win-text {
-    color: #2ecc71; /* Green for wins */
-    animation: pulseWin 0.5s ease-in-out;
-}
-
-@keyframes pulseWin {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+/* Bet controls and display */
+.roulette-controls {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping */
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    width: 100%;
 }
 
 #roulette-bet-input {
+    width: 100px;
+    text-align: center;
     padding: 8px;
     border-radius: 5px;
-    border: 1px solid #ccc;
-    width: 80px;
-    text-align: center;
-    margin-right: 10px;
-    background-color: #ecf0f1;
-    color: #333;
+    border: 1px solid #555;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #f5f5f5;
+}
+
+#roulette-spin-button, #roulette-clear-bets {
+    padding: 10px 20px;
     font-size: 1em;
 }
 
-#roulette-controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 15px;
-    gap: 15px;
-}
-
-#roulette-betting-area {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    margin-top: 20px;
-    gap: 15px;
-}
-
-.bet-chip-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    min-height: 25px; /* Ensure space for chips */
-    position: absolute; /* Allow chips to overlap without breaking layout */
-    bottom: 5px; /* Position chips at the bottom of the cell */
-    left: 50%;
-    transform: translateX(-50%);
-    pointer-events: none; /* Do not interfere with clicks on the cell */
-    z-index: 5;
-}
-
-.bet-chip {
-    background-color: #f1c40f;
-    color: #333;
-    border-radius: 50%;
-    width: 25px;
-    height: 25px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    font-size: 0.8em;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-    cursor: default; /* Not clickable directly */
-    transition: transform 0.1s ease;
-}
-
-.roulette-bet-button {
-    background-color: #3498db;
-    color: white;
-    padding: 10px 5px; /* Adjusted padding */
-    border: none;
+#roulette-placed-bets {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.9em; /* Smaller font for more buttons */
-    transition: background-color 0.2s ease;
+    min-height: 40px;
+    width: 100%;
+    box-sizing: border-box;
     text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative; /* For chips */
+    color: #c9d2da;
+    font-size: 0.95em;
 }
 
-.roulette-bet-button.red-bg { background-color: #e74c3c; }
-.roulette-bet-button.black-bg { background-color: #333; }
-.roulette-bet-button.green-bg { background-color: #27ae60; }
-
-.roulette-bet-button:hover:not(:disabled) {
-    opacity: 0.9;
-    transform: translateY(-2px);
-}
-
-.roulette-bet-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.roulette-bet-button.selected-bet-type {
-    border: 2px solid #f1c40f; /* Highlight selected bet type */
-    box-shadow: 0 0 10px #f1c40f;
-}
-
+/* Betting Board */
 #roulette-board-layout {
     display: grid;
-    grid-template-columns: 50px repeat(3, 1fr) 50px; /* Green, 3 columns, Column bets */
-    grid-template-rows: repeat(12, 1fr) 50px 50px; /* 12 rows for 36 numbers, 1 row for 1st 12 etc. and bottom row */
-    gap: 2px;
-    background-color: #2c3e50;
-    padding: 10px;
-    border-radius: 10px;
-    margin-top: 20px;
+    grid-template-columns: 0.6fr repeat(3, 1fr) 0.6fr; /* Smaller first/last columns for 0 and placeholder */
+    grid-template-rows: repeat(16, minmax(40px, 1fr)); /* 12 rows for 36 numbers + 0 + columns + dozens + halves */
+    gap: 4px;
     width: 100%;
-    max-width: 500px; /* Adjust as needed */
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    max-width: 600px; /* Limit max width for the board */
+    margin-top: 20px;
+    background-color: #1a472a; /* Darker green like blackjack table */
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
 }
 
 .board-cell {
-    background-color: #202b38;
-    border: 1px solid #1a242f;
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
     display: flex;
     justify-content: center;
     align-items: center;
-    color: white;
     font-weight: bold;
-    font-size: 0.9em;
+    color: #f5f5f5;
     cursor: pointer;
-    transition: background-color 0.1s ease, transform 0.1s ease;
-    position: relative;
-    min-height: 30px; /* Ensure cells are tall enough */
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    user-select: none;
+    position: relative; /* For chip placement */
 }
 
 .board-cell:hover:not(.disabled-cell) {
-    background-color: #3a475a;
-    transform: scale(1.02);
+    background-color: rgba(0, 0, 0, 0.6);
+    transform: translateY(-1px);
 }
 
-.board-cell.green-cell { background-color: #27ae60; }
-.board-cell.red-cell { background-color: #e74c3c; }
-.board-cell.black-cell { background-color: #333; }
+.board-cell.red { background-color: #cc0000; }
+.board-cell.black { background-color: #333333; }
+.board-cell.green { background-color: #006400; }
 
-/* Specific cell sizing and placement */
-.board-cell[data-number="0"] {
-    grid-column: 1 / span 3; /* Span across 3 columns */
-    grid-row: 1;
+.board-cell.active-bet {
+    border: 2px solid #f39c12; /* Orange border for active bets */
+    box-shadow: 0 0 10px rgba(243, 156, 18, 0.7);
 }
-.board-cell[data-number="00"] {
-    grid-column: 4 / span 1; /* Place 00 next to 0, if desired, or under it */
-    grid-row: 1; /* For a side-by-side 0, 00 layout */
-    /* Alternatively, for 00 below 0: */
-    /* grid-column: 1 / span 3; */
-    /* grid-row: 2; */
+
+.board-cell.disabled-cell {
+    pointer-events: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Chip Styling */
+.bet-chip {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    background-color: #f39c12; /* Orange chip */
+    border-radius: 50%;
+    color: white;
+    font-size: 0.8em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    border: 2px solid #e67e22;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    z-index: 5; /* Above cell background */
+    pointer-events: none; /* Chips themselves are not interactive */
+}
+
+/* Specific grid placements for roulette board */
+/* Column 0 (Green) */
+.board-cell[data-bet-type="number"][data-number="0"] {
+    grid-column: 1;
+    grid-row: 1 / span 12; /* Spans across all 12 rows of numbers */
+    font-size: 1.5em; /* Larger font for 0 */
 }
 
 /* Number cells (1-36) */
-/* Rows 2-13 for numbers */
-.board-cell[data-number] {
-    grid-row: calc( (var(--row-index) + 1) ); /* Row index based on 1-36. Row 1 is for 0/00 */
-    grid-column: var(--col-index);
+.board-cell[data-bet-type="number"]:not([data-number="0"]) {
+    /* Handled by JS for grid-column and grid-row based on number */
 }
-
 
 /* Column bets (3 cells below 1-36 columns) */
 .board-cell[data-bet-type^="column"] {
@@ -275,13 +207,13 @@
 
 
 /* Dozens bets (3 cells below 1-36 and columns) */
-.board-cell[data-bet-type^="dozen"] {
+.board-cell[data-bet-type^=\"dozen\"] {
     grid-row: 15; /* Place them below the columns */
     /* Handled by data-col-index in JS for precise placement */
 }
-.board-cell[data-bet-type="dozen1"] { grid-column: 2; }
-.board-cell[data-bet-type="dozen2"] { grid-column: 3; }
-.board-cell[data-bet-type="dozen3"] { grid-column: 4; }
+.board-cell[data-bet-type=\"dozen1\"] { grid-column: 2; }
+.board-cell[data-bet-type=\"dozen2\"] { grid-column: 3; }
+.board-cell[data-bet-type=\"dozen3\"] { grid-column: 4; }
 
 
 /* Bottom row for half bets */
@@ -289,31 +221,137 @@
     grid-row: 16; /* New row at the very bottom */
     grid-column: 1 / span 5; /* Span all 5 columns */
     display: grid;
-    grid-template-columns: repeat(6, 1fr); /* 6 equal cells */
-    gap: 2px;
-}
-.bottom-row-bets .board-cell {
-    background-color: #202b38;
+    grid-template-columns: repeat(6, 1fr); /* 6 cells for half bets */
+    gap: 4px;
 }
 
-#roulette-current-bet-display {
-    width: 100%;
-    max-width: 500px;
-    margin-top: 15px;
-    padding: 10px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 10px;
-    color: white;
-    font-size: 1.1em;
-    text-align: center;
+#roulette-board-layout .bottom-row-bets .board-cell {
+    font-size: 0.9em;
 }
 
-.total-bet-amount {
+/* Message styling */
+#roulette-result-message {
+    font-size: 1.4em;
     font-weight: bold;
-    color: #f1c40f;
+    margin-top: 15px;
+    min-height: 30px;
+    text-align: center;
+    color: #e0f2f7;
 }
 
-.bet-label {
-    font-size: 0.8em;
-    color: #bbb;
+/* Media Queries for Responsiveness */
+@media (max-width: 768px) {
+    .roulette-wheel-wrapper {
+        width: 280px; /* Smaller wheel */
+        height: 280px;
+        border-width: 6px; /* Thinner border */
+    }
+
+    #roulette-board-layout {
+        grid-template-rows: repeat(16, minmax(35px, 1fr)); /* Slightly smaller rows */
+        gap: 3px; /* Smaller gap */
+        max-width: 450px; /* Adjust board max width */
+        padding: 8px;
+    }
+
+    .board-cell {
+        font-size: 0.9em; /* Smaller font for board cells */
+    }
+
+    .board-cell[data-bet-type="number"][data-number="0"] {
+        font-size: 1.2em;
+    }
+
+    .bet-chip {
+        width: 20px; /* Smaller chips */
+        height: 20px;
+        font-size: 0.7em;
+    }
+
+    .roulette-controls {
+        flex-direction: column; /* Stack controls vertically */
+        gap: 10px;
+    }
+
+    .roulette-controls > div {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    #roulette-bet-input {
+        width: 80px;
+        font-size: 0.9em;
+    }
+
+    #roulette-spin-button, #roulette-clear-bets {
+        padding: 8px 15px;
+        font-size: 0.9em;
+    }
+
+    #roulette-placed-bets {
+        font-size: 0.85em;
+        min-height: 35px;
+    }
+
+    #roulette-result-message {
+        font-size: 1.2em;
+    }
+}
+
+@media (max-width: 480px) {
+    .roulette-wheel-wrapper {
+        width: 220px; /* Even smaller wheel */
+        height: 220px;
+        border-width: 4px;
+    }
+
+    #roulette-game-container {
+        padding: 15px;
+    }
+
+    #roulette-board-layout {
+        grid-template-rows: repeat(16, minmax(30px, 1fr)); /* Even smaller rows */
+        gap: 2px;
+        max-width: 320px; /* Even smaller board max width */
+        padding: 5px;
+    }
+
+    .board-cell {
+        font-size: 0.8em;
+    }
+
+    .board-cell[data-bet-type="number"][data-number="0"] {
+        font-size: 1em;
+    }
+
+    .bet-chip {
+        width: 16px; /* Even smaller chips */
+        height: 16px;
+        font-size: 0.6em;
+    }
+
+    #roulette-bet-input {
+        width: 70px;
+        font-size: 0.8em;
+    }
+
+    #roulette-spin-button, #roulette-clear-bets {
+        padding: 6px 12px;
+        font-size: 0.8em;
+    }
+
+    #roulette-placed-bets {
+        font-size: 0.75em;
+        min-height: 30px;
+    }
+
+    #roulette-result-message {
+        font-size: 1em;
+    }
+
+    #roulette-board-layout .bottom-row-bets .board-cell {
+        font-size: 0.7em;
+    }
 }

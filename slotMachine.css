@@ -9,14 +9,19 @@
     flex-direction: column;
     gap: 15px;
     transition: all 0.5s ease-in-out;
-    width: fit-content;
+    width: fit-content; /* Keep this for centering if flex-direction is row */
     position: relative;
+    /* Added for responsiveness */
+    max-width: 95%; /* Prevent grid from overflowing on very small screens */
+    box-sizing: border-box; /* Include padding in width calculation */
 }
 
 .slot-row {
     display: flex;
     justify-content: center;
     gap: 15px;
+    /* Added for responsiveness */
+    flex-wrap: wrap; /* Allow slots to wrap to the next line on smaller screens */
 }
 
 .slot {
@@ -29,6 +34,8 @@
     border: 4px solid #b48cfb;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+    /* Added for responsiveness */
+    flex-shrink: 0; /* Prevent slots from shrinking too much */
 }
 
 .slot-symbol-strip {
@@ -41,7 +48,7 @@
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    font-size: 3em;
+    font-size: 3em; /* Base font size for symbols */
     font-weight: bold;
     color: #fff;
 }
@@ -161,4 +168,55 @@
     0% { transform: scale(1); opacity: 1; border-color: #b48cfb; }
     50% { transform: scale(1.05); opacity: 0.8; border-color: gold; box-shadow: 0 0 50px gold; }
     100% { transform: scale(1); opacity: 1; border-color: #b48cfb; }
+}
+
+/* Responsive adjustments for Slot Machine */
+@media (max-width: 768px) {
+    #slots-grid {
+        padding: 15px;
+        gap: 10px;
+    }
+    .slot-row {
+        gap: 10px;
+    }
+    .slot {
+        width: 70px; /* Smaller slot size for tablets */
+        height: 85px;
+        border-width: 3px;
+    }
+    .slot-symbol-strip {
+        font-size: 2em; /* Adjusted symbol font size for tablets */
+    }
+    .slot-symbol-strip span {
+        height: 85px; /* Adjust symbol height to match new slot height */
+    }
+}
+
+@media (max-width: 480px) {
+    #slots-grid {
+        padding: 10px;
+        gap: 8px;
+    }
+    .slot-row {
+        gap: 8px;
+    }
+    .slot {
+        width: 55px; /* Even smaller slot size for phones */
+        height: 65px;
+        border-width: 2px;
+        border-radius: 10px;
+    }
+    .slot-symbol-strip {
+        font-size: 1.5em; /* Further adjusted symbol font size for phones */
+    }
+    .slot-symbol-strip span {
+        height: 65px; /* Adjust symbol height to match new slot height */
+    }
+
+    /* Adjust button and input sizes within the slot machine game */
+    #game-container input[type="number"],
+    #game-container button {
+        padding: 8px 15px;
+        font-size: 0.9em;
+    }
 }

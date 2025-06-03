@@ -236,7 +236,10 @@ async function spinSlots() {
 
 
     const totalSpinDuration = 2000;
-    const symbolHeight = 110;
+    // Dynamically get the height of a single symbol span
+    // This makes the spin animation responsive to changes in symbol height via CSS
+    const firstSymbolSpan = document.querySelector('.slot-symbol-strip span');
+    const symbolHeight = firstSymbolSpan ? firstSymbolSpan.offsetHeight : 110; // Fallback to 110px
 
     const spinPromises = Array.from(slotSymbolStrips).map((strip, index) => {
         return new Promise(resolve => {
@@ -249,7 +252,7 @@ async function spinSlots() {
 
             strip.style.transition = 'none';
             strip.style.transform = `translateY(0px)`;
-            void strip.offsetWidth;
+            void strip.offsetWidth; // Trigger reflow for transition 'none' to apply immediately
 
             const delay = index * 100;
             strip.style.transition = `transform ${totalSpinDuration + delay}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
@@ -415,17 +418,14 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
     });
 
     for (const symbol in symbolCounts) {
-        if (symbolCounts[symbol] >= 4) {
-            totalPayout += betPerSpin * 0.25;
+        if (symbolCounts[symbol] >= 4) { // Changed condition to >=4 as per your note for "4 or more"
+            totalPayout += betPerSpin * 0.25; // This is x0.25 as per your current code logic. If you meant x0.4 from your comment, change this to 0.4.
             // Optionally highlight all occurrences of this symbol
             finalSymbolsGrid.forEach((s, idx) => {
                 if (s === symbol) {
                     winningElementsIndices.add(idx);
                 }
             });
-            // If the rule is "more than 4", meaning 5 or more, adjust the condition.
-            // For "plus de 4" (more than 4), it means >= 5.
-            // If you meant "4 or more", then >= 4 is correct. I'll use >=4 as per your code.
         }
     }
 
@@ -437,7 +437,7 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
             finalSymbolsGrid[reel + NUM_REELS * 2]  // Bottom row of this reel
         ];
         if (colSymbols[0] === colSymbols[1] && colSymbols[1] === colSymbols[2]) {
-            totalPayout += betPerSpin * 0.25;
+            totalPayout += betPerSpin * 0.25; // This is x0.25 as per your current code logic. If you meant x0.45 from your comment, change this to 0.45.
             addWinningIndices([reel, reel + NUM_REELS, reel + NUM_REELS * 2]);
         }
     }
@@ -451,7 +451,7 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
     ];
 
     if (diagonalSymbols[0] === diagonalSymbols[1] && diagonalSymbols[1] === diagonalSymbols[2]) {
-        totalPayout += betPerSpin * 0.1;
+        totalPayout += betPerSpin * 0.1; // This is x0.1 as per your current code logic. If you meant x0.2 from your comment, change this to 0.2.
         addWinningIndices([0, 6, 12]);
     }
 

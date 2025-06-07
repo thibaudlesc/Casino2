@@ -310,7 +310,7 @@ function updateChickenMultiplier() {
             
             // La base de la progression exponentielle pour les poulets suivants.
             // Plus il y a d'os, plus cette base doit être élevée.
-            const exponentialGrowthBase = 1.05 + (numBones * 0.02); // 0.02 est un facteur à ajuster
+            const exponentialGrowthBase = 1.05 + (numBones * 0.01); // 0.02 est un facteur à ajuster
             
             // Le multiplicateur total sera une combinaison de la base pour le 1er poulet
             // et une croissance exponentielle pour les suivants.
@@ -321,8 +321,8 @@ function updateChickenMultiplier() {
 
         } else { // Si plus d'un poulet a été trouvé
             // Reprendre une base de calcul similaire au 1er poulet
-            const baseForFirstChicken = 1.00 + (numBones * numBones * 0.05); // La base pour le premier poulet
-            const exponentialGrowthBase = 1.05 + (numBones * 0.02); // La base de croissance pour les suivants
+            const baseForFirstChicken = 1.00 + (numBones * numBones * 0.01); // La base pour le premier poulet
+            const exponentialGrowthBase = 1.05 + (numBones * 0.007); // La base de croissance pour les suivants
 
             // Formule combinée:
             // La valeur du premier poulet est une base, puis chaque poulet additionnel

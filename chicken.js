@@ -300,7 +300,7 @@ function updateChickenMultiplier() {
             // calculatedMulti = 1 + (availableChickens / totalCells * (chickensFound + 0.5)) + (numBones * numBones * 0.05); // Simple mais non exponentiel assez
             // Tentons de créer quelque chose qui monte fort avec `numBones` pour le 1er poulet:
             // Pour 1 poulet trouvé, le multiplicateur dépend de `numBones`
-            calculatedMulti = 1.00 + (numBones * numBones * 0.01); // Plus d'os, plus la croissance est rapide (0.05 est un coefficient)
+            calculatedMulti = 1.00 + (numBones * numBones * 0.005); // Plus d'os, plus la croissance est rapide (0.05 est un coefficient)
             // Pour 24 os, numBones*numBones*0.05 = 24*24*0.05 = 576*0.05 = 28.8. Multiplicateur serait 29.8x pour le 1er poulet.
             // C'est un bon début.
 

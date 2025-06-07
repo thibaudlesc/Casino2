@@ -41,18 +41,24 @@ function startBlackjack() {
                     <button id="blackjack-deal-button" class="game-button">Distribuer</button>
                     <button id="blackjack-hit-button" class="game-button" disabled>Tirer</button>
                     <button id="blackjack-stand-button" class="game-button" disabled>Rester</button>
-                </div>
+                    <button id="blackjack-double-button" class="game-button" disabled>Doubler</button> </div>
             </div>
         </div>
-        <button onclick="showMainMenu()" class="game-button">Retour au Menu</button>
+        <button onclick="showMainMenuAndRefresh()" class="game-button">Retour au Menu</button>
     `;
 
     document.getElementById('blackjack-deal-button').addEventListener('click', dealBlackjack);
     document.getElementById('blackjack-hit-button').addEventListener('click', playerHit);
     document.getElementById('blackjack-stand-button').addEventListener('click', playerStand);
+    document.getElementById('blackjack-double-button').addEventListener('click', playerDoubleDown); // ÉCOUTEUR DOUBLER
 
     updateBalanceDisplay();
     updateBlackjackBetDisplay();
+}
+
+// Nouvelle fonction pour gérer le retour au menu et l'actualisation
+function showMainMenuAndRefresh() {
+    location.reload(); // Ceci actualisera toute la page
 }
 
 // Function to create a new deck
@@ -129,12 +135,20 @@ function displayHand(hand, elementId, isDealer = false) {
 // Function to update scores display
 function updateScores() {
     document.getElementById('player-score').textContent = calculateHandValue(playerHand);
-    // Dealer's score is only fully revealed at the end of the game or if player busts
-    if (!gameStarted || calculateHandValue([dealerHand[0]]) === 21) { // Show full score if blackjack on deal for dealer
-         document.getElementById('dealer-score').textContent = calculateHandValue(dealerHand);
+
+    // Initial check for dealer's hand to determine if it should be fully revealed
+    // This happens if the game is not started (i.e., just finished),
+    // or if dealer has a natural blackjack on deal
+    const dealerHandValue = calculateHandValue(dealerHand);
+    const dealerFirstCardValue = calculateHandValue([dealerHand[0]]);
+
+    // If game has just started (gameStarted is true), and the dealer's second card is hidden,
+    // display only the first card's value + '+'
+    if (gameStarted && dealerHand.length > 1 && document.getElementById('dealer-hand').querySelector('.facedown')) {
+        document.getElementById('dealer-score').textContent = dealerFirstCardValue + '+';
     } else {
-        // If game is started and dealer's first card is revealed, show only that value
-        document.getElementById('dealer-score').textContent = calculateHandValue([dealerHand[0]]) + (gameStarted ? '+' : '');
+        // Otherwise (game not started/finished, or dealer's card is revealed), display full score
+        document.getElementById('dealer-score').textContent = dealerHandValue;
     }
 }
 
@@ -179,6 +193,14 @@ function dealBlackjack() {
     document.getElementById('blackjack-hit-button').disabled = false;
     document.getElementById('blackjack-stand-button').disabled = false;
 
+    // Activer le bouton "Doubler" après la distribution initiale si le solde le permet
+    // Et si le joueur n'a pas déjà un Blackjack
+    if (balance >= blackjackBet && calculateHandValue(playerHand) < 21) {
+        document.getElementById('blackjack-double-button').disabled = false;
+    } else {
+        document.getElementById('blackjack-double-button').disabled = true;
+    }
+
     checkInitialBlackjack();
 }
 
@@ -213,6 +235,8 @@ function playerHit() {
     displayHand(playerHand, 'player-hand');
     updateScores();
 
+    document.getElementById('blackjack-double-button').disabled = true; // Désactiver le double après un hit
+
     if (calculateHandValue(playerHand) > 21) {
         document.getElementById('blackjack-message').textContent = "Vous avez BUST! Vous perdez.";
         endGameRound();
@@ -223,6 +247,7 @@ function playerHit() {
 function playerStand() {
     document.getElementById('blackjack-hit-button').disabled = true;
     document.getElementById('blackjack-stand-button').disabled = true;
+    document.getElementById('blackjack-double-button').disabled = true; // Désactiver le double après un stand
 
     // Reveal dealer's second card
     displayHand(dealerHand, 'dealer-hand', false);
@@ -230,6 +255,41 @@ function playerStand() {
 
     dealerTurn();
 }
+
+// Function to handle player double down
+function playerDoubleDown() {
+    // 1. Check if player has enough balance to double the bet
+    if (balance < blackjackBet) {
+        document.getElementById('blackjack-message').textContent = "Solde insuffisant pour doubler la mise.";
+        return;
+    }
+
+    // 2. Double the bet
+    balance -= blackjackBet; // Deduct the additional bet
+    blackjackBet *= 2;      // Double the current bet value
+    updateBalanceDisplay();
+    updateBlackjackBetDisplay();
+
+    // 3. Player receives exactly one more card
+    playerHand.push(deck.pop());
+    displayHand(playerHand, 'player-hand');
+    updateScores();
+
+    // 4. Disable all player action buttons (hit, stand, double) after doubling
+    document.getElementById('blackjack-hit-button').disabled = true;
+    document.getElementById('blackjack-stand-button').disabled = true;
+    document.getElementById('blackjack-double-button').disabled = true; // Disable double after it's used
+
+    // 5. Check for bust immediately
+    if (calculateHandValue(playerHand) > 21) {
+        document.getElementById('blackjack-message').textContent = "Vous avez BUST en doublant ! Vous perdez.";
+        endGameRound();
+    } else {
+        // 6. If not bust, it's the dealer's turn (player automatically stands)
+        playerStand(); // Reutilisez la logique de stand pour la fin du tour du joueur
+    }
+}
+
 
 // Dealer's turn logic
 function dealerTurn() {
@@ -288,4 +348,5 @@ function endGameRound() {
     document.getElementById('blackjack-deal-button').disabled = false; // Re-enable deal button
     document.getElementById('blackjack-hit-button').disabled = true; // Disable hit button
     document.getElementById('blackjack-stand-button').disabled = true; // Disable stand button
+    document.getElementById('blackjack-double-button').disabled = true; // Disable double button
 }

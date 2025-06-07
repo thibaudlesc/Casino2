@@ -7,10 +7,9 @@
     <link rel="stylesheet" href="base.css">
     <link rel="stylesheet" href="slotMachine.css">
     <link rel="stylesheet" href="blackjack.css">
-    <link rel="stylesheet" href="miniRoulette.css">
     <link rel="stylesheet" href="chicken.css">
     <style>
-        /* Styles pour la page de connexion */
+        /* Styles for the login page */
         #auth-container {
             background-color: rgba(0, 0, 0, 0.4);
             padding: 30px 40px;
@@ -19,7 +18,7 @@
             text-align: center;
             max-width: 400px;
             animation: fadeIn 1s ease-out;
-            margin: 20px;
+            margin: 20px auto; /* Modified to center horizontally */
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -28,97 +27,241 @@
         }
         #auth-container input {
             padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #555;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #f5f5f5;
+            border-radius: 8px; /* Slightly more rounded inputs */
+            border: 1px solid #444; /* Darker border */
+            background-color: #2c2c2c; /* Darker input background */
+            color: #e0e0e0; /* Lighter text color for input */
+            margin-bottom: 10px;
+            width: calc(100% - 20px); /* Adjust width for padding */
+            max-width: 300px; /* Added to standardize input size */
             font-size: 1em;
-            margin-bottom: 15px;
-            width: calc(100% - 22px); /* Adjusted for padding and border */
-            max-width: 300px; /* Ensures it doesn't get too wide on larger screens */
-            box-sizing: border-box; /* Added for responsive width */
-        }
-        #auth-container button {
-            padding: 10px 20px;
-            font-size: 1em;
-            margin: 5px auto; /* Center buttons */
-            width: auto; /* Let button content define width */
-            max-width: 200px; /* Limit button width */
+            outline: none; /* Remove outline on focus */
         }
 
-        /* Responsive adjustments for auth container */
-        @media (max-width: 480px) {
+        /* Message Styles */
+        #auth-message {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #f5f5f5; /* Default text color */
+        }
+
+        /* Login/Register Buttons */
+        .game-button {
+            background-color: #00bfa5; /* Vibrant teal */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 191, 165, 0.4); /* Teal glow */
+            margin: 10px 5px; /* Spacing between buttons */
+        }
+
+        .game-button:hover {
+            background-color: #00998a; /* Darker teal on hover */
+            transform: translateY(-2px);
+        }
+
+        .game-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(0, 191, 165, 0.6);
+        }
+
+        /* Logout Button Specific Styling */
+        .logout-button {
+            background-color: #e74c3c; /* Red for logout */
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+            margin-top: 20px; /* Space it from game buttons */
+        }
+
+        .logout-button:hover {
+            background-color: #c0392b; /* Darker red on hover */
+        }
+
+        /* Main Game Menu */
+        .main-menu {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .main-menu h1 {
+            color: #f5f5f5;
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 25px;
+        }
+
+        .main-menu .game-buttons {
+            display: flex;
+            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+            justify-content: center;
+            gap: 15px; /* Spacing between game buttons */
+        }
+
+        /* Win Text */
+        .win-text {
+            color: #00ffaa; /* Vibrant green for win */
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(0, 255, 170, 0.8);
+            animation: pulseGlow 1.5s infinite alternate;
+        }
+
+        /* Loss Text */
+        .loss-text {
+            color: #ff6b6b; /* Softer red for loss */
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+        }
+
+        @keyframes pulseGlow {
+            from { text-shadow: 0 0 5px rgba(0, 255, 170, 0.5); }
+            to { text-shadow: 0 0 15px rgba(0, 255, 170, 1); }
+        }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 25px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            h2 {
+                font-size: 1.5em;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 1em;
+                margin: 8px 4px;
+            }
+
+            .main-menu .game-buttons {
+                flex-direction: column; /* Stack buttons vertically on smaller screens */
+                align-items: center;
+            }
+
             #auth-container {
-                padding: 20px 25px; /* Smaller padding */
+                padding: 25px 30px;
                 gap: 10px;
             }
-            #auth-container input {
-                font-size: 0.9em;
-                padding: 8px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
             }
-            #auth-container button {
-                font-size: 0.9em;
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            h2 {
+                font-size: 1.3em;
+            }
+
+            button {
                 padding: 8px 15px;
+                font-size: 0.9em;
+                margin: 5px 2px;
             }
-        }
 
-        /* Existing utility styles */
-        .hidden {
-            display: none !important;
-        }
-
-        .balance-display {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #00ffaa;
-            margin-bottom: 20px;
-            text-shadow: 0 0 5px rgba(0, 255, 170, 0.5);
-        }
-
-        .logout-button {
-            background-color: #e74c3c; /* Red color for logout */
-            margin-top: 30px;
-        }
-
-        .logout-button:hover:not(:disabled) {
-            background-color: #c0392b;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+            #auth-container {
+                padding: 20px 25px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="auth-container">
-        <h2>Bienvenue au JEWBUZZ PRIME CASINO !</h2>
-        <p>Veuillez vous connecter ou créer un compte.</p>
-        <input type="text" id="username-input" placeholder="Nom d'utilisateur">
-        <input type="password" id="password-input" placeholder="Mot de passe">
-        <button id="login-button" class="game-button">Se connecter</button>
-        <button id="register-button" class="game-button">Créer un compte</button>
-        <p id="auth-message"></p>
+    <div class="container">
+        <div id="auth-container">
+            <h2>Bienvenue au JEWBUZZ PRIME CASINO !</h2>
+            <p id="auth-prompt-message">Veuillez choisir une option :</p>
+            <div id="initial-auth-options" style="display:flex; flex-direction: column; gap: 15px;">
+                <button id="show-login-form" class="game-button">Se connecter</button>
+                <button id="show-register-form" class="game-button">S'inscrire</button>
+            </div>
+
+            <div id="login-form" style="display:none; flex-direction: column; gap: 15px;">
+                <input type="email" id="email-input" placeholder="Email">
+                <input type="password" id="password-input" placeholder="Mot de passe">
+                <button id="login-button" class="game-button">Se connecter</button>
+                <button id="forgot-password-button" class="game-button">Mot de passe oublié ?</button>
+                <button id="back-to-auth-options" class="game-button">Retour</button>
+            </div>
+
+            <div id="register-form" style="display:none; flex-direction: column; gap: 15px;">
+                <input type="text" id="username-input" placeholder="Nom d'utilisateur">
+                <input type="email" id="register-email-input" placeholder="Email">
+                <input type="password" id="register-password-input" placeholder="Mot de passe">
+                <button id="create-account-button" class="game-button">Créer un compte</button>
+                <button id="back-to-auth-options-register" class="game-button">Retour</button>
+            </div>
+
+            <p id="auth-message"></p>
+        </div>
+
+        <div id="game-container" style="display:none;">
+            <p>Solde : <span id="current-balance">0</span> €</p>
+            <div class="main-menu">
+                <h1>Choisissez votre jeu</h1>
+                <div class="game-buttons">
+                    <button class="game-button" onclick="startSlotMachine()">Machines à Sous</button>
+                    <button class="game-button" onclick="startBlackjack()">Blackjack</button>
+                    <button class="game-button" onclick="startChickenGame()">Jeu du Poulet</button>
+                    <!-- Free Reward Button -->
+                    <button id="free-reward-button" class="game-button free-reward-button">Récompense Gratuite</button>
+                </div>
+                 <div id="free-reward-countdown" class="free-reward-countdown"></div>
+            </div>
+            <button id="logout-button" class="game-button logout-button">Se déconnecter</button>
+
+            <!-- New container for Progressive Jackpot -->
+            <div id="progressive-jackpot-container">
+                <p>JACKPOT : <span id="progressive-jackpot-display">0.00</span> €</p>
+            </div>
+
+            <!-- New container for Leaderboard -->
+            <div id="leaderboard-container">
+                <h2>🏆 Leaderboard 🏆</h2>
+                <ol id="leaderboard-list"></ol>
+            </div>
+
+            <div id="slot-machine-container" style="display:none;"></div>
+            <div id="blackjack-container" style="display:none;"></div>
+            <div id="chicken-game-container" style="display:none;"></div>
+
+            <button id="back-to-menu" class="game-button" style="display:none; margin-top: 20px;" onclick="showMainMenu()">Retour au Menu</button>
+        </div>
     </div>
 
-    <div id="game-container" style="display:none;">
-        <p>Solde : <span id="current-balance">0</span> €</p>
-        <div class="main-menu">
-            <h1>Choisissez votre jeu</h1>
-            <div class="game-buttons">
-                <button class="game-button" onclick="startSlotMachine()">Machines à Sous</button>
-                <button class="game-button" onclick="startBlackjack()">Blackjack</button>
-                <button class="game-button" onclick="startMiniRoulette()">Mini Roulette</button>
-                <button class="game-button" onclick="startChickenGame()">Jeu du Poulet</button>
-            </div>
-        </div>
-        <button id="logout-button" class="game-button logout-button">Se déconnecter</button>
-    </div>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+    <script>
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyD20ioDrmrfv42sOlZfE_CpUYwMctaAJhI",
+        authDomain: "moncasinocloud.firebaseapp.com",
+        projectId: "moncasinocloud",
+        storageBucket: "moncasinocloud.firebasestorage.app",
+        messagingSenderId: "334901643000",
+        appId: "1:334901643000:web:241325294edf3df6085d0d"
+      };
+
+      // Initialize Firebase
+      const app = firebase.initializeApp(firebaseConfig); // Use firebase.initializeApp
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+    </script>
 
     <script src="main.js"></script>
     <script src="slotMachine.js"></script>
     <script src="blackjack.js"></script>
-    <script src="miniRoulette.js"></script>
     <script src="chicken.js"></script>
 </body>
 </html>

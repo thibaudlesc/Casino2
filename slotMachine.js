@@ -7,7 +7,7 @@ let autoSpinInterval = null; // Variable to hold the interval for auto-spin
 let isSpinning = false; // Flag to prevent multiple spins during animation
 
 // Définition des symboles et de leurs poids pour la volatilité (simplifiée)
-const SYMBOLS = ['🍒', '🍊', '🔔', '💎', '7️⃣', 'BAR', '⭐']; // Added '⭐' for Scatter
+const SYMBOLS = ['🍒', '🍊', '🔔', '💎', '7️⃣', 'BAR', '⭐', '💯', '💣']; // Changed '💰' to '💯' and '💩' to '💣'
 const SYMBOL_WEIGHTS = { // Adjust weights for volatility and rarity of scatter
     '🍒': 0.25, // Cherry (frequent, low payout)
     '🍊': 0.20,
@@ -15,14 +15,16 @@ const SYMBOL_WEIGHTS = { // Adjust weights for volatility and rarity of scatter
     '💎': 0.15,
     '7️⃣': 0.11, // Higher payout
     'BAR': 0.07, // Highest payout for BAR combinations
-    '⭐': 0.05 // Scatter for Free Spins
+    '⭐': 0.05, // Scatter for Free Spins
+    '💯': 0.07, // Jackpot Symbol (appears only during free spins) - Changed from '💰'
+    '💣': 0.07 // Malus Symbol (appears only during free spins) - Changed from '💩'
 };
 
 // Payout table for 3-row, 5-reel slot machine (per active payline)
 const PAYTABLE = {
     // Symbol, count: {payoutMultiplier, isFreeSpinTrigger (optional)}
     '🍒': { 3: { payout: 2 }, 4: { payout: 5 }, 5: { payout: 10 } },
-    '🍊': { 3: { payout: 5 }, 4: { payout: 10 }, 5: { payout: 20 } },
+    '�': { 3: { payout: 5 }, 4: { payout: 10 }, 5: { payout: 20 } },
     '🔔': { 3: { payout: 10 }, 4: { payout: 20 }, 5: { payout: 40 } },
     '💎': { 3: { payout: 25 }, 4: { payout: 50 }, 5: { payout: 100 } },
     '7️⃣': { 3: { payout: 50 }, 4: { payout: 100 }, 5: { payout: 250 } },
@@ -36,6 +38,8 @@ const PAYLINES = [
     [5, 6, 7, 8, 9],       // Middle Row
     [10, 11, 12, 13, 14] // Bottom Row
 ];
+
+const BET_AMOUNTS = [100, 250, 500, 1000, 2000, 7500, 10000, 25000, 50000, 75000, 100000, 200000];
 
 
 // Function to generate the HTML for symbols for each slot
@@ -72,20 +76,42 @@ function startSlotMachine() {
         <div id="slots-grid">
             ${slotsHTML}
         </div>
+
         <p>Solde : <span id="current-balance">${balance}</span> €</p>
         <p id="gain-text">Gain : 0 €</p>
         <p>Tours Gratuits : <span id="free-spins-display">${freeSpins}</span></p>
-        <input type="number" id="bet-input" value="10" min="1">
-        <button id="spin-button" onclick="spinSlots()">Lancer</button>
-        <button id="auto-spin-button" onclick="toggleAutoSpin()">Auto Spin</button>
-        <button onclick="showMainMenu()">Retour</button>
+
+        <div class="bet-controls">
+            <label for="bet-select">Mise :</label>
+            <select id="bet-select">
+                ${BET_AMOUNTS.map(amount => `<option value="${amount}">${amount >= 10000 ? (amount / 1000) + 'k' : amount}€</option>`).join('')}
+            </select>
+        </div>
+        <br/>
+        <button id="spin-button">Lancer</button>
+        <button id="auto-spin-button">Auto Spin</button>
+        <button onclick="showMainMenu()">Retour au Menu</button>
     `;
+    // Initialize display values immediately when slot machine starts
     updateBalanceDisplay();
-    updateFreeSpinsDisplay();
-    updateSlotMachineMode();
-    // Initialize lastBetAmount if it's the first time entering slot machine
-    const betInput = document.getElementById('bet-input');
-    lastBetAmount = parseInt(betInput.value); // Set initial bet amount
+
+    document.getElementById('spin-button').addEventListener('click', spinSlots);
+    document.getElementById('auto-spin-button').addEventListener('click', toggleAutoSpin);
+    // There is no "stop-auto-spin-button" in the generated HTML, so this line is effectively inert
+    // document.getElementById('stop-auto-spin-button').addEventListener('click', toggleAutoSpin);
+
+    // Set default bet amount to the first value in the array
+    document.getElementById('bet-select').value = BET_AMOUNTS[0];
+}
+
+function showMainMenu() {
+    // Optional: Stop auto-spin if it's active before reloading
+    if (autoSpinInterval) {
+        clearInterval(autoSpinInterval);
+        autoSpinInterval = null;
+    }
+    // This line reloads the page, taking you back to the initial state
+    location.reload();
 }
 
 function updateFreeSpinsDisplay() {
@@ -97,23 +123,23 @@ function updateFreeSpinsDisplay() {
 
 function updateSlotMachineMode() {
     const slotsGrid = document.getElementById('slots-grid');
-    const betInput = document.getElementById('bet-input');
+    const betSelect = document.getElementById('bet-select'); // Changed from bet-input
     const autoSpinButton = document.getElementById('auto-spin-button');
 
     if (slotsGrid) {
         if (freeSpins > 0) {
             slotsGrid.classList.add('slot-machine-free-spin-mode');
-            if (betInput) {
-                betInput.disabled = true; // Disable bet input during free spins
-                betInput.value = lastBetAmount; // Ensure bet is set to last won bet
+            if (betSelect) { // Changed from betInput
+                betSelect.disabled = true; // Disable bet input during free spins
+                betSelect.value = lastBetAmount; // Ensure bet is set to last won bet
             }
             if (autoSpinButton) {
                 autoSpinButton.disabled = true; // Disable auto-spin during free spins
             }
         } else {
             slotsGrid.classList.remove('slot-machine-free-spin-mode');
-            if (betInput) {
-                betInput.disabled = false; // Enable bet input when no free spins
+            if (betSelect) { // Changed from betInput
+                betSelect.disabled = false; // Enable bet input when no free spins
             }
             if (autoSpinButton) {
                 autoSpinButton.disabled = false; // Enable auto-spin when no free spins
@@ -126,7 +152,7 @@ function updateSlotMachineMode() {
 function toggleAutoSpin() {
     const autoSpinButton = document.getElementById('auto-spin-button');
     const spinButton = document.getElementById('spin-button');
-    const betInput = document.getElementById('bet-input');
+    const betSelect = document.getElementById('bet-select'); // Changed from bet-input
 
     if (autoSpinInterval) {
         // Stop auto-spin
@@ -134,12 +160,12 @@ function toggleAutoSpin() {
         autoSpinInterval = null;
         autoSpinButton.textContent = 'Auto Spin';
         spinButton.disabled = false;
-        betInput.disabled = false;
+        betSelect.disabled = false; // Changed from betInput
     } else {
         // Start auto-spin
         autoSpinButton.textContent = 'Arrêter Auto Spin';
         spinButton.disabled = true; // Disable manual spin button
-        betInput.disabled = true; // Disable bet input
+        betSelect.disabled = true; // Disable bet input // Changed from betInput
 
         // Start the first spin immediately
         spinSlots();
@@ -147,7 +173,7 @@ function toggleAutoSpin() {
         // Set up interval for subsequent spins
         autoSpinInterval = setInterval(async () => {
             // Check conditions before spinning again
-            const currentBet = parseInt(betInput.value);
+            const currentBet = parseInt(betSelect.value); // Changed from betInput
             if (balance < currentBet && freeSpins === 0) {
                 toggleAutoSpin(); // Stop auto-spin if balance is insufficient
                 alert("Solde insuffisant pour continuer l'auto-spin !");
@@ -166,12 +192,12 @@ async function spinSlots() {
     if (isSpinning) return; // Prevent multiple calls while spinning
     isSpinning = true;
 
-    const betInput = document.getElementById('bet-input');
+    const betSelect = document.getElementById('bet-select'); // Changed from bet-input
     const spinButton = document.getElementById('spin-button');
     const autoSpinButton = document.getElementById('auto-spin-button');
     const slotsGrid = document.getElementById('slots-grid');
     const gameContainer = document.getElementById('game-container');
-    let bet = parseInt(betInput.value);
+    let bet = parseInt(betSelect.value); // Changed from betInput
 
     let isFreeSpinRound = (freeSpins > 0);
 
@@ -199,7 +225,7 @@ async function spinSlots() {
 
     // Disable buttons during the spin animation
     spinButton.disabled = true;
-    betInput.disabled = true;
+    betSelect.disabled = true; // Changed from betInput
     if (autoSpinInterval) {
         autoSpinButton.disabled = true;
     }
@@ -217,12 +243,18 @@ async function spinSlots() {
     slotElements.forEach(slotEl => {
         slotEl.classList.remove('pop');
     });
-    slotsGrid.classList.remove('slot-machine-new-free-spins', 'slot-machine-big-win');
+    // Remove all specific animation classes before applying new ones
+    slotsGrid.classList.remove('slot-machine-new-free-spins', 'slot-machine-big-win', 'slot-machine-jackpot-win', 'slot-machine-malus-mode'); // Added malus-mode
     document.getElementById('gain-text').classList.remove('win-animation');
 
     // Generate random symbols for all 15 positions in the grid
     for (let i = 0; i < NUM_REELS * NUM_ROWS; i++) {
-        finalSymbolsGrid.push(getRandomSymbolByWeight());
+        // If it's a free spin round, we can have the '💯' or '💣' symbol
+        if (isFreeSpinRound) {
+            finalSymbolsGrid.push(getRandomSymbolByWeight(true)); // Pass true to allow jackpot and malus symbols
+        } else {
+            finalSymbolsGrid.push(getRandomSymbolByWeight(false)); // Pass false to disallow jackpot and malus symbols
+        }
     }
 
     const gainText = document.getElementById('gain-text');
@@ -246,21 +278,27 @@ async function spinSlots() {
             const targetSymbol = finalSymbolsGrid[index];
             const targetSymbolIndexInSymbolsArray = SYMBOLS.indexOf(targetSymbol);
 
-            const totalSymbolsInStrip = SYMBOLS.length;
-            const extraSpins = 3;
+            // Calculate the position to land on the target symbol within the strip
+            // We add extra spins to ensure the animation looks like a full rotation before landing
+            const totalSymbolsInStrip = SYMBOLS.length; // Number of unique symbols in the strip
+            const extraSpins = 3; // Number of full rotations before landing on target
             const finalStopPosition = (extraSpins * totalSymbolsInStrip * symbolHeight) + (targetSymbolIndexInSymbolsArray * symbolHeight);
 
+            // Reset transform and transition to instantly snap to the start of the "next" loop
             strip.style.transition = 'none';
             strip.style.transform = `translateY(0px)`;
             void strip.offsetWidth; // Trigger reflow for transition 'none' to apply immediately
 
-            const delay = index * 100;
-            strip.style.transition = `transform ${totalSpinDuration + delay}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+            // Apply the spinning transition with a delay for staggered reel stops
+            const delay = index * 100; // Stagger delay per reel
+            strip.style.transition = `transform ${totalSpinDuration + delay}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`; // Ease-out cubic-bezier
 
+            // Apply the final transform to land on the target symbol
             strip.style.transform = `translateY(-${finalStopPosition}px)`;
 
+            // Resolve the promise after the animation duration plus its delay
             setTimeout(() => {
-                slotElements[index].classList.remove('spinning');
+                slotElements[index].classList.remove('spinning'); // Remove spinning class once animation is done
                 resolve();
             }, totalSpinDuration + delay);
         });
@@ -274,6 +312,62 @@ async function spinSlots() {
     let newFreeSpinsEarned = result.newFreeSpins;
     const winningElementsIndices = result.winningElementsIndices;
 
+    // Check for Malus win (5 '💣' symbols during free spins)
+    const malusSymbol = '💣'; // Changed from '💩'
+    let malusSymbolCount = 0;
+    finalSymbolsGrid.forEach(symbol => {
+        if (symbol === malusSymbol) {
+            malusSymbolCount++;
+        }
+    });
+
+    if (malusSymbolCount >= 5 && isFreeSpinRound) {
+        balance = Math.floor(balance / 2); // Divide balance by 2
+        document.getElementById('gain-text').textContent = `MALUS! Votre solde est divisé par 2 !`;
+        triggerMalusPhrase(gameContainer); // Trigger the custom malus phrase animation
+        
+        // Add malus animation class to the grid outline
+        if (slotsGrid) {
+            slotsGrid.classList.add('slot-machine-malus-mode');
+            setTimeout(() => {
+                slotsGrid.classList.remove('slot-machine-malus-mode');
+            }, 3500); // Animation duration for malus glow
+        }
+    }
+
+    // Check for Jackpot win
+    const jackpotSymbol = '💯'; // Changed from '💰'
+    let jackpotSymbolCount = 0;
+    finalSymbolsGrid.forEach(symbol => {
+        if (symbol === jackpotSymbol) {
+            jackpotSymbolCount++;
+        }
+    });
+
+    if (jackpotSymbolCount >= 5 && isFreeSpinRound) {
+        totalPayout += progressiveJackpot; // Award the progressive jackpot
+        document.getElementById('gain-text').textContent = `JACKPOT! Vous avez gagné ${progressiveJackpot.toFixed(2)} € !`;
+        // Reset the progressive jackpot after it's won
+        progressiveJackpot = 10000; // Reset to initial value
+        saveProgressiveJackpot();
+        updateProgressiveJackpotDisplay();
+        triggerConfetti('jackpot-win', gameContainer); // Trigger confetti for jackpot
+        triggerJackpotWordAnimation(gameContainer); // Trigger new jackpot word animation
+        
+        balance += progressiveJackpot; // Add jackpot to balance
+        triggerFloatingWinNumbers(progressiveJackpot, gameContainer); // Show floating numbers for jackpot
+        
+        // Add the new jackpot animation class for the grid outline
+        if (slotsGrid) {
+            slotsGrid.classList.add('slot-machine-jackpot-win');
+            setTimeout(() => {
+                slotsGrid.classList.remove('slot-machine-jackpot-win');
+            }, 3500); // Animation duration is 3s, remove after 3.5s
+        }
+
+    }
+
+
     if (newFreeSpinsEarned > 0 && slotsGrid) {
         slotsGrid.classList.add('slot-machine-new-free-spins');
         triggerConfetti('new-free-spins', gameContainer);
@@ -282,19 +376,24 @@ async function spinSlots() {
         }, 600);
     }
 
-    balance += totalPayout;
+    balance += totalPayout; // Apply total payout after malus check (if no malus occurred)
     freeSpins += newFreeSpinsEarned;
 
     updateBalanceDisplay();
     updateFreeSpinsDisplay();
     updateSlotMachineMode();
 
-    gainText.textContent = `Gain : ${totalPayout} €`;
-    if (totalPayout > 0 || newFreeSpinsEarned > 0) {
+    // Update gain text only if it wasn't a malus (malus has its own text)
+    if (malusSymbolCount < 5) {
+        gainText.textContent = `Gain : ${totalPayout} €`; 
+    }
+    
+    if (totalPayout > 0 || newFreeSpinsEarned > 0 || jackpotSymbolCount >= 5 || malusSymbolCount >= 5) { // Include malus win in animation check
         gainText.classList.add('win-animation');
 
-        const isBigWin = totalPayout >= (bet * 10) || newFreeSpinsEarned > 0;
-        if (isBigWin && slotsGrid) {
+        const isBigWin = totalPayout >= (bet * 10) || newFreeSpinsEarned > 0 || jackpotSymbolCount >= 5; // Updated big win condition
+        // Only apply 'slot-machine-big-win' if it's not a jackpot win or malus win
+        if (isBigWin && slotsGrid && jackpotSymbolCount < 5 && malusSymbolCount < 5) {
             slotsGrid.classList.add('slot-machine-big-win');
             triggerConfetti('big-win', gameContainer);
             setTimeout(() => {
@@ -302,6 +401,7 @@ async function spinSlots() {
             }, 2000);
         }
 
+        // Floating numbers only for positive gains (not for malus)
         if (totalPayout > 0) {
             triggerFloatingWinNumbers(totalPayout, gameContainer);
         }
@@ -321,23 +421,28 @@ async function spinSlots() {
     // This is where the 3-second delay *after* the result display happens
     setTimeout(() => {
         isSpinning = false; // Reset the spinning flag after the delay
-        // Re-enable buttons if not in auto-spin or if auto-spin finished free spins
-        if (!autoSpinInterval) { // If auto-spin is not active
-            spinButton.disabled = false;
-            if (freeSpins === 0) { // Only re-enable bet input if no free spins left
-                betInput.disabled = false;
-            }
-        } else { // If auto-spin is active, and free spins are done, ensure button is re-enabled
-            if (freeSpins === 0) {
-                autoSpinButton.disabled = false;
-            }
-            // For auto-spin, the interval itself will trigger the next spin, no need for direct call here
-        }
-    }, 3000); // This is the 3-second pause after results are shown
 
-    // If it's a free spin round, we don't need to re-enable buttons here,
-    // the next spin will be triggered by the freeSpins logic after its own delay.
-    // If it's an auto-spin, the setInterval will handle the next spin.
+        if (freeSpins > 0) {
+            // If there are still free spins, trigger the next one automatically
+            // A slight delay ensures the UI updates and animations complete before the next spin starts
+            setTimeout(() => {
+                spinSlots();
+            }, 1000); // Short delay (e.g., 1 second) between automatic free spins
+        } else {
+            // If no free spins left, or it was a regular spin
+            if (!autoSpinInterval) {
+                // If auto-spin is not active, re-enable manual spin and bet controls
+                spinButton.disabled = false;
+                betSelect.disabled = false;
+            } else {
+                // If auto-spin was active and free spins just finished, re-enable auto-spin button
+                // and potentially bet select if auto-spin is managing regular spins now.
+                // The autoSpinInterval itself will trigger the next regular spin.
+                autoSpinButton.disabled = false;
+                betSelect.disabled = false; // Re-enable bet select for regular auto-spin
+            }
+        }
+    }, 3000); // This is the 3-second pause after results are shown for all spins
 }
 
 
@@ -432,9 +537,9 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
     // 4. Full column of the same item - x0.45 the bet
     for (let reel = 0; reel < NUM_REELS; reel++) {
         const colSymbols = [
-            finalSymbolsGrid[reel],             // Top row of this reel
+            finalSymbolsGrid[reel],          // Top row of this reel
             finalSymbolsGrid[reel + NUM_REELS], // Middle row of this reel
-            finalSymbolsGrid[reel + NUM_REELS * 2]  // Bottom row of this reel
+            finalSymbolsGrid[reel + NUM_REELS * 2]   // Bottom row of this reel
         ];
         if (colSymbols[0] === colSymbols[1] && colSymbols[1] === colSymbols[2]) {
             totalPayout += betPerSpin * 0.25; // This is x0.25 as per your current code logic. If you meant x0.45 from your comment, change this to 0.45.
@@ -464,20 +569,38 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
 
 
 // Utility function to get a random symbol based on weights
-function getRandomSymbolByWeight() {
-    let totalWeight = 0;
-    for (let symbol in SYMBOL_WEIGHTS) {
-        totalWeight += SYMBOL_WEIGHTS[symbol];
+function getRandomSymbolByWeight(allowSpecialSymbols = false) {
+    let weightedSymbols = [];
+    let symbolsAndWeights = {};
+
+    // Clone the original SYMBOL_WEIGHTS for safe modification
+    for (const sym in SYMBOL_WEIGHTS) {
+        symbolsAndWeights[sym] = SYMBOL_WEIGHTS[sym];
     }
 
-    let random = Math.random() * totalWeight;
-    for (let symbol in SYMBOL_WEIGHTS) {
-        random -= SYMBOL_WEIGHTS[symbol];
-        if (random <= 0) {
-            return symbol;
+    // Remove special symbols if not allowed
+    if (!allowSpecialSymbols) {
+        delete symbolsAndWeights['💯']; // Removed jackpot symbol
+        delete symbolsAndWeights['💣']; // Removed malus symbol
+    }
+
+    // Populate weightedSymbols array based on scaled weights
+    for (const symbol in symbolsAndWeights) {
+        // Multiply by 100 for better granularity and to avoid floating point issues
+        const count = Math.round(symbolsAndWeights[symbol] * 100);
+        for (let i = 0; i < count; i++) {
+            weightedSymbols.push(symbol);
         }
     }
-    return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; // Fallback
+
+    if (weightedSymbols.length === 0) {
+        // Fallback in case no symbols are left (should ideally not happen with valid weights)
+        console.error("Aucun symbole disponible pour la sélection pondérée ! Retour d'un symbole par défaut.");
+        return '❓'; // Return a default placeholder symbol
+    }
+
+    // Pick a random symbol from the weighted array
+    return weightedSymbols[Math.floor(Math.random() * weightedSymbols.length)];
 }
 
 // --- CONFETTI FUNCTION ---
@@ -493,7 +616,8 @@ function triggerConfetti(type, parentElement) {
         confettiContainer.innerHTML = ''; // Clear previous confetti
     }
 
-    const numConfetti = (type === 'big-win' || type === 'new-free-spins') ? 100 : 50;
+    // Adjust confetti count based on the win type
+    const numConfetti = (type === 'jackpot-win') ? 300 : ((type === 'big-win' || type === 'new-free-spins') ? 100 : 50);
 
     for (let i = 0; i < numConfetti; i++) {
         const confetti = document.createElement('div');
@@ -529,7 +653,7 @@ function triggerConfetti(type, parentElement) {
 
 // --- FLOATING WIN NUMBERS FUNCTION ---
 function triggerFloatingWinNumbers(amount, parentElement) {
-    if (!parentElement || amount <= 0) return;
+    if (!parentElement || amount === 0) return; // Only trigger for non-zero amounts
 
     let floatingContainer = parentElement.querySelector('.floating-win-number-container');
     if (!floatingContainer) {
@@ -540,10 +664,14 @@ function triggerFloatingWinNumbers(amount, parentElement) {
         floatingContainer.innerHTML = ''; // Clear previous numbers
     }
 
-    // Number of floating numbers to generate, more for larger wins
-    const numNumbers = Math.min(Math.floor(amount / 20) + 1, 10);
-    const baseValue = Math.floor(amount / numNumbers);
-    const remainingValue = amount % numNumbers;
+    // Determine prefix based on amount (positive or negative)
+    const prefix = amount > 0 ? '+' : '';
+    const displayAmount = Math.abs(amount);
+
+    // Number of floating numbers to generate, more for larger amounts
+    const numNumbers = Math.min(Math.floor(displayAmount / 20) + 1, 10);
+    const baseValue = Math.floor(displayAmount / numNumbers);
+    const remainingValue = displayAmount % numNumbers;
 
     for (let i = 0; i < numNumbers; i++) {
         const numberSpan = document.createElement('span');
@@ -553,7 +681,7 @@ function triggerFloatingWinNumbers(amount, parentElement) {
         if (i < remainingValue) { // Distribute remainder
             value++;
         }
-        numberSpan.textContent = `+${value}€`;
+        numberSpan.textContent = `${prefix}${value}€`;
 
         // Random starting position within the parent element
         // Distribute within a reasonable central area of the parent for better visibility
@@ -567,6 +695,11 @@ function triggerFloatingWinNumbers(amount, parentElement) {
         numberSpan.style.animationDelay = `${Math.random() * 0.2}s`; // Stagger animation start
         numberSpan.style.animationDuration = `${Math.random() * 0.8 + 1.5}s`; // Vary duration
 
+        // Add a class for negative numbers to potentially style them differently (e.g., red)
+        if (amount < 0) {
+            numberSpan.classList.add('negative-floating-number');
+        }
+
         floatingContainer.appendChild(numberSpan);
     }
 
@@ -574,5 +707,74 @@ function triggerFloatingWinNumbers(amount, parentElement) {
         if (floatingContainer) {
             floatingContainer.remove();
         }
-    }, 4500); // Ensure this matches the longest floating number animation duration + delay
+    }, 1500); // Ensure this matches the longest floating number animation duration + delay
+}
+
+
+// Nouvelle fonction pour l'animation du mot "JACKPOT"
+function triggerJackpotWordAnimation(parentElement) {
+    if (!parentElement) return;
+
+    // Crée un conteneur temporaire pour le mot JACKPOT afin de gérer le z-index et la position
+    let jackpotWordContainer = document.createElement('div');
+    jackpotWordContainer.style.position = 'absolute';
+    jackpotWordContainer.style.top = '0';
+    jackpotWordContainer.style.left = '0';
+    jackpotWordContainer.style.width = '100%';
+    jackpotWordContainer.style.height = '100%';
+    jackpotWordContainer.style.display = 'flex';
+    jackpotWordContainer.style.justifyContent = 'center';
+    jackpotWordContainer.style.alignItems = 'center';
+    jackpotWordContainer.style.pointerEvents = 'none'; // Permet de cliquer à travers
+    jackpotWordContainer.style.zIndex = '100'; // S'assurer qu'il est au-dessus de tout
+
+    parentElement.appendChild(jackpotWordContainer);
+
+    // Un seul mot "JACKPOT"
+    const jackpotWordSpan = document.createElement('span');
+    jackpotWordSpan.classList.add('jackpot-word');
+    jackpotWordSpan.textContent = 'JACKPOT';
+
+    // Teinte aléatoire pour une couleur vive
+    const randomHue = Math.floor(Math.random() * 360);
+    jackpotWordSpan.style.setProperty('--hue', randomHue); // Transmet la teinte au CSS
+
+    // Ajuster la taille de police pour un impact maximum
+    jackpotWordSpan.style.fontSize = `4em`; // Taille fixe et grande pour un mot unique
+
+    jackpotWordContainer.appendChild(jackpotWordSpan);
+
+    // Supprimer le conteneur après l'animation
+    setTimeout(() => {
+        jackpotWordContainer.remove();
+    }, 4500); // Doit correspondre à la durée de l'animation CSS + un peu de marge
+}
+
+// Nouvelle fonction pour l'animation du mot de malus
+function triggerMalusPhrase(parentElement) {
+    if (!parentElement) return;
+
+    let malusWordContainer = document.createElement('div');
+    malusWordContainer.style.position = 'absolute';
+    malusWordContainer.style.top = '0';
+    malusWordContainer.style.left = '0';
+    malusWordContainer.style.width = '100%';
+    malusWordContainer.style.height = '100%';
+    malusWordContainer.style.display = 'flex';
+    malusWordContainer.style.justifyContent = 'center';
+    malusWordContainer.style.alignItems = 'center';
+    malusWordContainer.style.pointerEvents = 'none';
+    malusWordContainer.style.zIndex = '102'; // Encore plus élevé pour s'assurer qu'il est au-dessus du jackpot
+
+    parentElement.appendChild(malusWordContainer);
+
+    const malusWordSpan = document.createElement('span');
+    malusWordSpan.classList.add('malus-phrase');
+    malusWordSpan.textContent = 'Big Zgeg -50%';
+
+    malusWordContainer.appendChild(malusWordSpan);
+
+    setTimeout(() => {
+        malusWordContainer.remove();
+    }, 3500); // Durée de l'animation du malus phrase + un peu de marge
 }

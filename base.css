@@ -2,7 +2,7 @@
 /* Using Inter for a cleaner, modern look. */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 /* Keeping Orbitron for titles if you want a distinct heading style, but Inter can also be used for headings. */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;display=swap');
 
 
 /* General Body and Layout */
@@ -222,4 +222,270 @@ input[type="password"]:focus {
         font-size: 0.9em;
         margin: 6px 3px;
     }
+}
+
+/* Styles pour les nombres de gain flottants */
+.floating-win-number {
+    position: absolute;
+    left: 0; /* CRUCIAL: Positionne l'élément au coin supérieur gauche du parent */
+    top: 0;  /* CRUCIAL: Positionne l'élément au coin supérieur gauche du parent */
+    font-size: 2.2em; /* Taille encore plus grande pour le pop */
+    font-weight: bold;
+    /* La couleur est définie par JS. L'ombre de texte utilisera la couleur du texte (currentColor) pour la lueur. */
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor; /* Lueur basée sur la couleur du texte */
+    opacity: 0;
+    /* Animation: "superPopAndFloat" avec un cubic-bezier pour un effet de rebond/pop plus marqué */
+    animation: superPopAndFloat 3s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1000; /* Assure que les chiffres apparaissent au-dessus des autres éléments */
+    pointer-events: none; /* Permet aux clics de passer à travers les chiffres */
+    white-space: nowrap; /* Empêche le texte de s'envelopper */
+    /* transform-origin: center center; est retiré car il n'y a plus de rotation */
+    will-change: transform, opacity, text-shadow; /* Optimisation de performance pour les animations */
+
+    /* Variables CSS - leurs valeurs sont définies par JavaScript */
+    --start-x: 0px; /* Position X de départ de l'animation */
+    --start-y: 0px; /* Position Y de départ de l'animation */
+    --end-offset-x: 0px; /* Décalage X final pour la dispersion */
+    --end-offset-y: 0px; /* Décalage Y final pour la dispersion */
+    /* --random-rotate: 0deg; est retiré car il n'y a plus de rotation */
+}
+
+/* Animation des nombres flottants pour un "super pop" (sans rotation) */
+@keyframes superPopAndFloat {
+    0% {
+        opacity: 0;
+        transform: translate(var(--start-x), var(--start-y)) scale(0); /* Commence invisible et très petit, sans rotation */
+        text-shadow: none; /* Pas d'ombre au début */
+    }
+    8% { /* Pic du pop, très rapide (atteint 8% du temps total d'animation) */
+        opacity: 1; /* Devient entièrement visible */
+        transform: translate(var(--start-x), var(--start-y)) scale(1.8); /* Grossit ENORMEMENT (180% de sa taille normale) */
+        text-shadow: 0 0 15px currentColor, 0 0 25px currentColor, 0 0 40px currentColor; /* Lueur intense basée sur la couleur */
+    }
+    20% { /* Retour à la taille normale (atteint 20% du temps total d'animation) */
+        opacity: 1;
+        transform: translate(var(--start-x), var(--start-y)) scale(1);
+        text-shadow: 0 0 10px currentColor, 0 0 20px currentColor; /* Lueur légèrement réduite */
+    }
+    70% { /* Phase de dispersion principale (atteint 70% du temps total d'animation) */
+        opacity: 0.8; /* Commence à s'estomper légèrement */
+        /* Se déplace du point de départ (start-x/y) par les décalages (end-offset-x/y) */
+        transform: translate(calc(var(--start-x) + var(--end-offset-x)), calc(var(--start-y) + var(--end-offset-y))) scale(1.0);
+        text-shadow: 0 0 5px currentColor; /* Lueur diminue encore */
+    }
+    100% { /* Fin de l'animation (atteint 100% du temps total d'animation) */
+        opacity: 0; /* Disparition complète */
+        /* Continue la dispersion, s'éloigne plus loin et se réduit légèrement */
+        transform: translate(calc(var(--start-x) + var(--end-offset-x) * 1.5), calc(var(--start-y) + var(--end-offset-y) * 1.5)) scale(0.7);
+        text-shadow: none; /* Plus d'ombre */
+    }
+}
+
+/* Styles pour le Jackpot Progressif */
+#progressive-jackpot-container {
+    background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700); /* Richer Gold to Orange gradient */
+    color: #4B0082; /* Dark purple text for strong contrast and luxury feel */
+    padding: 18px 30px; /* Slightly more padding */
+    border-radius: 15px; /* More rounded corners */
+    margin: 25px auto; /* Increased margin */
+    max-width: 450px; /* Slightly wider */
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), inset 0 0 15px rgba(255, 165, 0, 0.6); /* Stronger outer and inner glow */
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8em; /* Larger font size for prominence */
+    font-weight: bold;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4); /* Deeper text shadow */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 3px solid #DAA520; /* Darker goldenrod border for definition */
+    animation: jackpotGlow 2s infinite alternate, jackpotFloat 3s infinite ease-in-out; /* Added floating animation */
+    transform: translateY(0); /* Ensure initial state for float animation */
+}
+
+#progressive-jackpot-display {
+    color: rgb(255, 0, 255); /* Vibrant magenta color in RGB */
+    margin-left: 15px; /* Increased margin for number */
+    font-size: 1em; /* Smaller size for the number itself */
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* Slightly stronger shadow for visibility */
+}
+
+/* Animation for the glow */
+@keyframes jackpotGlow {
+    from {
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.7), inset 0 0 12px rgba(255, 165, 0, 0.5);
+    }
+    to {
+        box-shadow: 0 0 50px rgba(255, 215, 0, 1), inset 0 0 25px rgba(255, 165, 0, 0.8);
+    }
+}
+
+/* Animation for subtle floating effect */
+@keyframes jackpotFloat {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+}
+
+
+@media (max-width: 768px) {
+    #progressive-jackpot-container {
+        font-size: 1.4em;
+        padding: 15px 25px;
+        margin: 20px auto;
+    }
+    #progressive-jackpot-display {
+        font-size: 0.9em; /* Adjusted for smaller screens */
+    }
+}
+
+@media (max-width: 480px) {
+    #progressive-jackpot-container {
+        font-size: 1.1em;
+        padding: 12px 20px;
+        max-width: 320px;
+        margin: 15px auto;
+    }
+    #progressive-jackpot-display {
+        font-size: 0.8em; /* Adjusted for very small screens */
+    }
+}
+
+/* Styles pour le Leaderboard */
+#leaderboard-container {
+    background-color: rgba(0, 0, 0, 0.4);
+    padding: 20px 25px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    margin: 30px auto;
+    max-width: 500px;
+    width: 90%;
+    box-sizing: border-box;
+    /* Changed to flex to enable display property control in JS */
+    display: flex; /* Changed from 'none' to 'flex' for easier JS toggling */
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center content horizontally */
+}
+
+#leaderboard-container h2 {
+    color: #e0f2f7;
+    font-size: 1.8em;
+    margin-bottom: 20px;
+    font-family: 'Orbitron', sans-serif;
+    text-shadow: 0 0 8px rgba(224, 242, 247, 0.3);
+}
+
+#leaderboard-list {
+    list-style: none; /* Remove default list styling */
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    width: 100%; /* Take full width of its container */
+}
+
+#leaderboard-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 1.1em;
+    color: #f5f5f5;
+}
+
+#leaderboard-list li:last-child {
+    border-bottom: none; /* No border for the last item */
+}
+
+.leaderboard-rank {
+    font-weight: bold;
+    color: #FFD700; /* Gold color for rank */
+    width: 30px; /* Fixed width for rank */
+    text-align: right;
+    margin-right: 10px;
+}
+
+.leaderboard-username {
+    flex-grow: 1; /* Take up remaining space */
+    color: #c9d2da;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.leaderboard-balance {
+    font-weight: bold;
+    color: #00ffaa; /* Green for balance */
+    margin-left: 10px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    #leaderboard-container {
+        padding: 15px 20px;
+        max-width: 400px;
+    }
+    #leaderboard-container h2 {
+        font-size: 1.5em;
+    }
+    #leaderboard-list li {
+        font-size: 1em;
+        padding: 8px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    #leaderboard-container {
+        padding: 10px 15px;
+        max-width: 300px;
+    }
+    #leaderboard-container h2 {
+        font-size: 1.2em;
+    }
+    #leaderboard-list li {
+        font-size: 0.9em;
+        padding: 6px 0;
+    }
+    .leaderboard-rank {
+        width: 25px;
+        margin-right: 5px;
+    }
+    .leaderboard-balance {
+        margin-left: 5px;
+    }
+}
+
+/* Styles for the Free Reward Button */
+.free-reward-button {
+    background-color: #5cb85c; /* Green color for reward */
+    box-shadow: 0 4px 15px rgba(92, 184, 92, 0.4);
+    margin-top: 20px;
+}
+
+.free-reward-button:hover:not(:disabled) {
+    background-color: #4cae4c; /* Darker green on hover */
+    transform: translateY(-2px);
+}
+
+.free-reward-button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(92, 184, 92, 0.6);
+}
+
+/* Styles for the countdown display */
+.free-reward-countdown {
+    font-size: 0.9em;
+    color: #c9d2da;
+    margin-top: 10px;
+    font-weight: bold;
+    min-height: 20px; /* To prevent layout jumps */
+}
+
+.free-reward-countdown.available-text {
+    color: #00ffaa; /* Green when available */
+    animation: pulseGlow 1.5s infinite alternate;
+}
+
+.free-reward-countdown.countdown-text {
+    color: #f0ad4e; /* Orange/yellow during countdown */
 }

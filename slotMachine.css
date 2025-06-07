@@ -237,3 +237,165 @@
         font-size: 0.9em;
     }
 }
+
+.bet-controls {
+    margin-bottom: 0px; /* Remove margin-bottom as it's now handled by gap in controls-container */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center; /* Center bet controls within its own flex container */
+    width: 100%; /* Ensure it takes full width to allow centering its content */
+}
+
+#bet-select {
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 2px solid #5a6e7f; /* A slightly darker border */
+    background-color: #3f5161; /* Background matching other UI elements */
+    color: #f5f5f5; /* Text color */
+    font-size: 1.1em;
+    cursor: pointer;
+    outline: none;
+    appearance: none; /* Remove default dropdown arrow */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%205%22%3E%3Cpath%20fill%3D%22%23f5f5f5%22%20d%3D%22M2%200L0%202h4L2%200zm0%205L0%203h4L2%205z%22%2F%3E%3C%2Fsvg%3E'); /* Custom SVG arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 8px 10px;
+    flex-grow: 1; /* Allow it to grow, but respect max-width */
+    max-width: 150px; /* Limit its width */
+    text-align: center; /* Center the text inside the select */
+    text-align-last: center; /* For Firefox */
+}
+
+/* Animation extraordinaire pour le Jackpot */
+@keyframes jackpotExplosionGlow {
+    0% {
+        box-shadow: 0 0 40px rgba(255, 223, 0, 0.8), inset 0 0 20px rgba(255, 223, 0, 0.6);
+        border-color: #ffd700;
+        transform: scale(1);
+    }
+    25% {
+        box-shadow: 0 0 60px rgba(255, 100, 0, 1), inset 0 0 30px rgba(255, 100, 0, 0.8);
+        border-color: #ff8c00;
+        transform: scale(1.02);
+    }
+    50% {
+        box-shadow: 0 0 80px rgba(255, 0, 255, 1), inset 0 0 40px rgba(255, 0, 255, 0.8);
+        border-color: #ee82ee;
+        transform: scale(1.04);
+    }
+    75% {
+        box-shadow: 0 0 60px rgba(0, 255, 255, 1), inset 0 0 30px rgba(0, 255, 255, 0.8);
+        border-color: #00ced1;
+        transform: scale(1.02);
+    }
+    100% {
+        box-shadow: 0 0 40px rgba(255, 223, 0, 0.8), inset 0 0 20px rgba(255, 223, 0, 0.6);
+        border-color: #ffd700;
+        transform: scale(1);
+    }
+}
+
+/* Styles pour les mots JACKPOT flottants (mise à jour pour un mot unique, centré) */
+.jackpot-word {
+    position: absolute; /* Positionné par rapport à son conteneur parent (game-container) */
+    top: 50%; /* Centre verticalement */
+    left: 50%; /* Centre horizontalement */
+    transform: translate(-50%, -50%) scale(0); /* Commence petit et centré */
+    font-family: 'Orbitron', sans-serif; /* Police percutante */
+    font-weight: bold;
+    color: white; /* Couleur par défaut, sera surchargée par JS/HSL */
+    text-shadow: 0 0 10px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.5);
+    opacity: 0;
+    pointer-events: none; /* Permet les clics derrière */
+    white-space: nowrap; /* Empêche le texte de s'envelopper */
+    z-index: 100; /* Assure qu'il est au-dessus de tout */
+    animation: jackpotWordAppear 3s forwards ease-out; /* Nouvelle animation */
+    will-change: transform, opacity, text-shadow, color; /* Optimisation */
+
+    /* Variable CSS pour la couleur HSL */
+    --hue: 0;
+}
+
+@keyframes jackpotWordAppear {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5); /* Commence petit */
+        color: hsl(var(--hue), 100%, 80%);
+        text-shadow: none;
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(2.0); /* S'agrandit de manière significative */
+        text-shadow: 0 0 25px hsl(var(--hue), 100%, 80%), 0 0 50px hsl(var(--hue), 100%, 70%); /* Lueur intense */
+    }
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.8); /* Légèrement plus petit à la fin de l'opacité maximale */
+        text-shadow: 0 0 15px hsl(var(--hue), 100%, 80%), 0 0 30px hsl(var(--hue), 100%, 70%);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.0); /* Disparaît et se réduit */
+        text-shadow: none;
+    }
+}
+
+/* Animation pour le Malus */
+@keyframes malusAppear {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+        color: #ff0000; /* Rouge pour le malus */
+        text-shadow: none;
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(2.0);
+        text-shadow: 0 0 25px #ff0000, 0 0 50px rgba(255, 0, 0, 0.7);
+    }
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.8);
+        text-shadow: 0 0 15px #ff0000, 0 0 30px rgba(255, 0, 0, 0.7);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.0);
+        text-shadow: none;
+    }
+}
+
+.malus-phrase {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    font-size: 3em; /* Grande taille pour un impact maximal */
+    color: #ff0000; /* Rouge par défaut */
+    text-shadow: 0 0 10px rgba(255,0,0,0.7), 0 0 20px rgba(255,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 101; /* Plus élevé que le mot jackpot pour être au-dessus */
+    animation: malusAppear 3s forwards ease-out;
+    will-change: transform, opacity, text-shadow;
+}
+
+/* Animation optionnelle pour le contour de la grille en cas de malus */
+.slot-machine-malus-mode {
+    animation: malusGlow 3s infinite alternate ease-in-out;
+    border-color: #ff4d4d !important; /* Bordure rouge */
+    box-shadow: 0 0 30px #ff4d4d, inset 0 0 15px #ff4d4d !important;
+}
+
+@keyframes malusGlow {
+    0% {
+        box-shadow: 0 0 20px rgba(255, 77, 77, 0.5), inset 0 0 10px rgba(255, 77, 77, 0.3);
+    }
+    100% {
+        box-shadow: 0 0 60px #ff4d4d, inset 0 0 30px #ff4d4d;
+    }
+}

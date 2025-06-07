@@ -2,7 +2,7 @@ let currentGame = null;
 let currentUserId = null; // To store the Firebase User ID (UID)
 let balance = 0; // Initial balance for new users
 let progressiveJackpot = 10000; // Initial value of the progressive jackpot
-const JACKPOT_INCREMENT_PER_SECOND = 0.5; // Jackpot increment per second
+const JACKPOT_INCREMENT_PER_SECOND = 2; // Jackpot increment per second
 
 // New formatter for currency display with French locale for thousands separator
 // A new instance is created here, but could also be created inside the functions

@@ -24,7 +24,7 @@ const SYMBOL_WEIGHTS = { // Adjust weights for volatility and rarity of scatter
 const PAYTABLE = {
     // Symbol, count: {payoutMultiplier, isFreeSpinTrigger (optional)}
     '🍒': { 3: { payout: 2 }, 4: { payout: 5 }, 5: { payout: 10 } },
-    '�': { 3: { payout: 5 }, 4: { payout: 10 }, 5: { payout: 20 } },
+    '🍊': { 3: { payout: 5 }, 4: { payout: 10 }, 5: { payout: 20 } },
     '🔔': { 3: { payout: 10 }, 4: { payout: 20 }, 5: { payout: 40 } },
     '💎': { 3: { payout: 25 }, 4: { payout: 50 }, 5: { payout: 100 } },
     '7️⃣': { 3: { payout: 50 }, 4: { payout: 100 }, 5: { payout: 250 } },

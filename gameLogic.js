@@ -332,13 +332,13 @@ async function logout() {
 function displayGameSelectionMenu() {
     const gameContainer = document.getElementById('game-container');
     gameContainer.innerHTML = `
-        <h1>BIENVENUE AU JEWBUZZ CASINO !</h1>
-        <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
-        <!-- Jackpot here -->
-        <div id="progressive-jackpot-container">
-            <p>JACKPOT : <span id="progressive-jackpot-display">${currencyFormatter.format(firebaseService.getProgressiveJackpot())}</span> €</p>
-        </div>
         <div class="main-menu">
+            <h1>BIENVENUE AU JEWBUZZ CASINO !</h1>
+            <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
+            <!-- Jackpot here -->
+            <div id="progressive-jackpot-container">
+                <p>JACKPOT : <span id="progressive-jackpot-display">${currencyFormatter.format(firebaseService.getProgressiveJackpot())}</span> €</p>
+            </div>
             <h1>Choisissez votre jeu</h1>
             <div class="game-buttons">
                 <button class="game-button" onclick="startSlotMachine()">Machines à Sous</button>
@@ -357,10 +357,11 @@ function displayGameSelectionMenu() {
             <ol id="leaderboard-list"></ol>
         </div>
         <button id="logout-button" class="game-button logout-button">Se déconnecter</button>
+        <!-- Game specific containers, initially hidden -->
         <div id="slot-machine-container" style="display:none;"></div>
         <div id="blackjack-container" style="display:none;"></div>
         <div id="chicken-game-container" style="display:none;"></div>
-        <div id="shop-container" style="display:none;"></div> <!-- Ensure shop container is present -->
+        <div id="shop-container" style="display:none;"></div> 
 
         <button id="back-to-menu" class="game-button" style="display:none; margin-top: 20px;" onclick="showMainMenu()">Retour au Menu</button>
     `;
@@ -376,57 +377,30 @@ function displayGameSelectionMenu() {
  * Shows the main menu and hides game-specific containers.
  */
 function showMainMenu() {
-    hideAllGameContainers();
-    const gameContainer = document.getElementById('game-container');
-    gameContainer.innerHTML = `
-        <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
-        <!-- Jackpot here -->
-        <div id="progressive-jackpot-container">
-            <p>JACKPOT : <span id="progressive-jackpot-display">${currencyFormatter.format(firebaseService.getProgressiveJackpot())}</span> €</p>
-        </div>
-        <div class="main-menu">
-            <h1>Choisissez votre jeu</h1>
-            <div class="game-buttons">
-                <button class="game-button" onclick="startSlotMachine()">Machines à Sous</button>
-                <button class="game-button" onclick="startBlackjack()">Blackjack</button>
-                <button class="game-button" onclick="startChickenGame()">Jeu du Poulet</button>
-                <button class="game-button" onclick="startShop()">Boutique</button> <!-- New: Shop button -->
-                <!-- Free Reward Button -->
-                <button id="free-reward-button" class="game-button free-reward-button">Récompense Gratuite</button>
-            </div>
-            <div id="free-reward-countdown" class="free-reward-countdown"></div>
-        </div>
+    // Hide all game containers explicitly
+    document.getElementById('slot-machine-container').style.display = 'none';
+    document.getElementById('blackjack-container').style.display = 'none';
+    document.getElementById('chicken-game-container').style.display = 'none';
+    document.getElementById('shop-container').style.display = 'none';
 
-        <!-- Leaderboard container needs to be present in the main menu view -->
-        <div id="leaderboard-container">
-            <h2>🏆 Leaderboard 🏆</h2>
-            <ol id="leaderboard-list"></ol>
-        </div>
-        <button id="logout-button" class="game-button logout-button">Se déconnecter</button>
-        <div id="slot-machine-container" style="display:none;"></div>
-        <div id="blackjack-container" style="display:none;"></div>
-        <div id="chicken-game-container" style="display:none;"></div>
-        <div id="shop-container" style="display:none;"></div> <!-- Ensure shop container is present -->
-
-        <button id="back-to-menu" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
-    `;
-    
-    // Re-attach listeners after HTML recreation
-    setupGameMenuListeners(); 
-
-    // Ensure reward button and countdown are visible and active
+    // Show main menu elements
+    document.querySelector('.main-menu').style.display = 'block';
+    document.getElementById('progressive-jackpot-container').style.display = 'block';
+    document.getElementById('leaderboard-container').style.display = 'block';
+    document.getElementById('logout-button').style.display = 'block';
     document.getElementById('free-reward-button').style.display = 'block';
     document.getElementById('free-reward-countdown').style.display = 'block';
+    document.getElementById('back-to-menu').style.display = 'none'; // Hide general back button
+
+    updateBalanceDisplay(firebaseService.getUserBalance()); // Ensure balance is updated on return to main menu
+    updateProgressiveJackpotDisplay(firebaseService.getProgressiveJackpot());
     startRewardCountdown(); // Re-start countdown
-    
-    // Ensure jackpot and leaderboard are visible
-    document.getElementById('progressive-jackpot-container').style.display = 'flex';
-    document.getElementById('leaderboard-container').style.display = 'flex';
-    document.getElementById('logout-button').style.display = 'block';
-    
     firebaseService.loadLeaderboard(); // Explicitly load leaderboard data
-    console.log("GameLogic: HTML for main menu re-rendered by showMainMenu. Jackpot display element (after render):", document.getElementById('progressive-jackpot-display'));
+    
+    // Clear any game-specific 'current-game'
+    currentGame = null; 
 }
+
 
 /**
  * Sets up listeners for game menu buttons.
@@ -464,19 +438,10 @@ function setupGameMenuListeners() {
 }
 
 /**
- * Hides all game-specific containers and the main menu.
+ * Hides all game-specific containers and the main menu elements that are not universally present.
+ * Ensures only the active game container is visible.
  */
-function hideAllGameContainers() {
-    // Hide game-specific containers
-    const slotContainer = document.getElementById('slot-machine-container');
-    if (slotContainer) slotContainer.style.display = 'none';
-    const blackjackContainer = document.getElementById('blackjack-container');
-    if (blackjackContainer) blackjackContainer.style.display = 'none';
-    const chickenContainer = document.getElementById('chicken-game-container');
-    if (chickenContainer) chickenContainer.style.display = 'none';
-    const shopContainer = document.getElementById('shop-container'); // New: Hide shop container
-    if (shopContainer) shopContainer.style.display = 'none';
-    
+function hideAllGameContainersAndMenu() {
     // Hide main menu elements
     const mainMenu = document.querySelector('.main-menu');
     if (mainMenu) mainMenu.style.display = 'none';
@@ -493,17 +458,29 @@ function hideAllGameContainers() {
     const freeRewardCountdown = document.getElementById('free-reward-countdown');
     if (freeRewardCountdown) freeRewardCountdown.style.display = 'none';
     
+    // Hide all specific game containers
+    const slotContainer = document.getElementById('slot-machine-container');
+    if (slotContainer) slotContainer.style.display = 'none';
+    const blackjackContainer = document.getElementById('blackjack-container');
+    if (blackjackContainer) blackjackContainer.style.display = 'none';
+    const chickenContainer = document.getElementById('chicken-game-container');
+    if (chickenContainer) chickenContainer.style.display = 'none';
+    const shopContainer = document.getElementById('shop-container'); 
+    if (shopContainer) shopContainer.style.display = 'none';
+
     stopRewardCountdown(); // Stop countdown when navigating away from main menu
 }
+
 
 // Functions to start specific games (these would typically trigger game-specific logic)
 function startSlotMachine() {
     currentGame = 'slot';
-    hideAllGameContainers(); // Hide main menu elements first
+    hideAllGameContainersAndMenu(); // Hide main menu elements and other games
     
-    const gameContainer = document.getElementById('game-container');
-    gameContainer.innerHTML = `
-        <div id="slot-machine-container">
+    const slotContainer = document.getElementById('slot-machine-container');
+    // Load HTML only if it's not already loaded
+    if (!slotContainer.innerHTML.trim()) {
+        slotContainer.innerHTML = `
             <h2>✦ MACHINE À SOUS ✦</h2>
             <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
             <div id="slots-grid">
@@ -521,103 +498,102 @@ function startSlotMachine() {
             <br/>
             <button id="spin-button" class="game-button">Lancer</button>
             <button id="auto-spin-button" class="game-button">Auto Spin</button>
+            <div id="auto-spin-remaining-display" style="font-size: 0.8em; margin-top: 5px; color: #ccc;"></div>
             <button id="back-to-menu-slot" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
-        </div>
-    `;
-    // Now call the actual game initialization
-    initSlotMachine(); 
-    // Show back to menu button for the specific game
-    document.getElementById('back-to-menu-slot').addEventListener('click', showMainMenu);
-    // Ensure jackpot is hidden in game views
-    const jackpotContainer = document.getElementById('progressive-jackpot-container');
-    if (jackpotContainer) jackpotContainer.style.display = 'none';
+             <!-- Removed symbol stats display from here, now only in slotMachine.js init -->
+        `;
+        // Now call the actual game initialization, which also attaches listeners
+        initSlotMachine(); 
+        // Attach back to menu button listener
+        document.getElementById('back-to-menu-slot').addEventListener('click', showMainMenu);
+    }
+    slotContainer.style.display = 'block'; // Show the slot machine container
+    updateBalanceDisplay(firebaseService.getUserBalance()); // Ensure balance is updated
 }
 
 function startBlackjack() {
     currentGame = 'blackjack';
-    hideAllGameContainers(); // Hide main menu elements first
-    // Re-render the blackjack specific HTML
-    const gameContainer = document.getElementById('game-container');
-    gameContainer.innerHTML = `
-        <h2>♦ BLACKJACK ♦</h2>
-        <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
-        <div id="blackjack-game-area">
-            <h3>Croupier (<span id="dealer-score">0</span>)</h3>
-            <div id="dealer-hand" class="blackjack-hand"></div>
+    hideAllGameContainersAndMenu(); // Hide main menu elements and other games
 
-            <h3>Joueur (<span id="player-score">0</span>)</h3>
-            <div id="player-hand" class="blackjack-hand"></div>
+    const blackjackContainer = document.getElementById('blackjack-container');
+    if (!blackjackContainer.innerHTML.trim()) {
+        blackjackContainer.innerHTML = `
+            <h2>♦ BLACKJACK ♦</h2>
+            <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
+            <div id="blackjack-game-area">
+                <h3>Croupier (<span id="dealer-score">0</span>)</h3>
+                <div id="dealer-hand" class="blackjack-hand"></div>
 
-            <p id="blackjack-message" class="blackjack-result">Placez votre mise pour commencer !</p>
-            <p id="blackjack-current-bet">Mise actuelle : 0 €</p>
+                <h3>Joueur (<span id="player-score">0</span>)</h3>
+                <div id="player-hand" class="blackjack-hand"></div>
 
-            <div id="blackjack-controls">
-                <div class="bet-controls">
-                    <label for="blackjack-bet-amount">Mise : </label>
-                    <input type="number" id="blackjack-bet-amount" value="10" min="1" step="1">
-                </div>
-                <div class="blackjack-actions">
-                    <button id="blackjack-deal-button" class="game-button" disabled>Distribuer</button>
-                    <button id="blackjack-hit-button" class="game-button" disabled>Tirer</button>
-                    <button id="blackjack-stand-button" class="game-button" disabled>Rester</button>
-                    <button id="blackjack-double-button" class="game-button" disabled>Doubler</button>
+                <p id="blackjack-message" class="blackjack-result">Placez votre mise pour commencer !</p>
+                <p id="blackjack-current-bet">Mise actuelle : 0 €</p>
+
+                <div id="blackjack-controls">
+                    <div class="bet-controls">
+                        <label for="blackjack-bet-amount">Mise : </label>
+                        <input type="number" id="blackjack-bet-amount" value="10" min="1" step="1">
+                    </div>
+                    <div class="blackjack-actions">
+                        <button id="blackjack-deal-button" class="game-button">Distribuer</button>
+                        <button id="blackjack-hit-button" class="game-button" disabled>Tirer</button>
+                        <button id="blackjack-stand-button" class="game-button" disabled>Rester</button>
+                        <button id="blackjack-double-button" class="game-button" disabled>Doubler</button>
+                    </div>
                 </div>
             </div>
-        </div>
-        <button id="back-to-menu-blackjack" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
-    `;
-    // Now call the actual game initialization
-    initBlackjack(); 
-    // Show back to menu button for the specific game
-    document.getElementById('back-to-menu-blackjack').addEventListener('click', showMainMenu);
-    // Ensure jackpot is hidden in game views
-    const jackpotContainer = document.getElementById('progressive-jackpot-container');
-    if (jackpotContainer) jackpotContainer.style.display = 'none';
+            <button id="back-to-menu-blackjack" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
+        `;
+        initBlackjack(); 
+        document.getElementById('back-to-menu-blackjack').addEventListener('click', showMainMenu);
+    }
+    blackjackContainer.style.display = 'block';
+    updateBalanceDisplay(firebaseService.getUserBalance());
 }
 
 function startChickenGame() {
     currentGame = 'chickenGame';
-    hideAllGameContainers(); // Hide main menu elements first
-    // Re-render the chicken game specific HTML
-    const gameContainer = document.getElementById('game-container');
-    gameContainer.innerHTML = `
-        <h2>🐔 JEU DU POULET 🦴</h2>
-        <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
-        <div id="chicken-game-area">
-            <div class="chicken-controls">
-                <div class="bet-controls">
-                    <label for="chicken-bet-select">Mise : </label>
-                    <select id="chicken-bet-select">
-                        <!-- Options will be populated by chicken.js -->
-                    </select>
-                </div>
-                <div>
-                    <label for="chicken-bones-input">Os : </label>
-                    <input type="number" id="chicken-bones-input" value="3" min="1" max="24">
-                </div>
-                <button id="chicken-play-button" class="game-button">Jouer</button>
-            </div>
-            
-            <p id="chicken-message" class="chicken-message">Choisissez votre mise et le nombre d'os, puis cliquez sur Jouer !</p>
+    hideAllGameContainersAndMenu(); 
 
-            <div class="chicken-stats-and-cashout">
-                <p id="chicken-current-multiplier">Multiplicateur Actuel : x1.00</p>
-                <p id="chicken-potential-win">Gain Potentiel : 0.00 €</p>
-                <button id="chicken-cashout-button" class="game-button" disabled>Encaisser</button>
-            </div>
-            
-            <div id="chicken-grid"></div>
+    const chickenContainer = document.getElementById('chicken-game-container');
+    if (!chickenContainer.innerHTML.trim()) {
+        chickenContainer.innerHTML = `
+            <h2>🐔 JEU DU POULET 🦴</h2>
+            <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
+            <div id="chicken-game-area">
+                <div class="chicken-controls">
+                    <div class="bet-controls">
+                        <label for="chicken-bet-select">Mise : </label>
+                        <select id="chicken-bet-select">
+                            <!-- Options will be populated by chicken.js -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="chicken-bones-input">Os : </label>
+                        <input type="number" id="chicken-bones-input" value="3" min="1" max="24">
+                    </div>
+                    <button id="chicken-play-button" class="game-button">Jouer</button>
+                </div>
+                
+                <p id="chicken-message" class="chicken-message">Choisissez votre mise et le nombre d'os, puis cliquez sur Jouer !</p>
 
-        </div>
-        <button id="back-to-menu-chicken" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
-    `;
-    // Now call the actual game initialization
-    initChickenGame(); 
-    // Show back to menu button for the specific game
-    document.getElementById('back-to-menu-chicken').addEventListener('click', showMainMenu);
-    // Ensure jackpot is hidden in game views
-    const jackpotContainer = document.getElementById('progressive-jackpot-container');
-    if (jackpotContainer) jackpotContainer.style.display = 'none';
+                <div class="chicken-stats-and-cashout">
+                    <p id="chicken-current-multiplier">Multiplicateur Actuel : x1.00</p>
+                    <p id="chicken-potential-win">Gain Potentiel : 0.00 €</p>
+                    <button id="chicken-cashout-button" class="game-button" disabled>Encaisser</button>
+                </div>
+                
+                <div id="chicken-grid"></div>
+
+            </div>
+            <button id="back-to-menu-chicken" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
+        `;
+        initChickenGame(); 
+        document.getElementById('back-to-menu-chicken').addEventListener('click', showMainMenu);
+    }
+    chickenContainer.style.display = 'block';
+    updateBalanceDisplay(firebaseService.getUserBalance());
 }
 
 
@@ -626,11 +602,11 @@ function startChickenGame() {
  */
 function startShop() {
     currentGame = 'shop';
-    hideAllGameContainers(); // Hide main menu elements first
+    hideAllGameContainersAndMenu(); 
     
-    const gameContainer = document.getElementById('game-container');
-    gameContainer.innerHTML = `
-        <div id="shop-container">
+    const shopContainer = document.getElementById('shop-container');
+    if (!shopContainer.innerHTML.trim()) {
+        shopContainer.innerHTML = `
             <h2>🛍️ Boutique de Cosmétiques 🛍️</h2>
             <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
             <div id="shop-message" class="shop-message"></div>
@@ -639,19 +615,15 @@ function startShop() {
                 <p>Chargement des articles de la boutique...</p>
             </div>
             <button id="back-to-menu-shop" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
-        </div>
-    `;
-
-    // Initialize shop after the HTML is rendered.
-    // The handleAllCosmeticsLoaded callback will be triggered by firebaseService
-    // and will then call initShop with the actual data.
-    // However, calling initShop here ensures the UI is ready to receive data.
-    initShop(updateBalanceDisplay, showFloatingWinNumbers, currencyFormatter, firebaseService.getAllAvailableCosmetics()); // Pass initial data (could be empty initially)
-    
-    // Show back to menu button for the shop
-    document.getElementById('back-to-menu-shop').addEventListener('click', showMainMenu);
-    // Ensure shop container is visible
-    document.getElementById('shop-container').style.display = 'flex';
+        `;
+        // Initialize shop after the HTML is rendered.
+        // The handleAllCosmeticsLoaded callback will be triggered by firebaseService
+        // and will then call initShop with the actual data.
+        initShop(updateBalanceDisplay, showFloatingWinNumbers, currencyFormatter, firebaseService.getAllAvailableCosmetics()); 
+        document.getElementById('back-to-menu-shop').addEventListener('click', showMainMenu);
+    }
+    shopContainer.style.display = 'flex'; // Ensure shop container is visible
+    updateBalanceDisplay(firebaseService.getUserBalance());
 }
 
 // --- Balance and Jackpot UI Update Functions ---

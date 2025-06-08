@@ -5,6 +5,7 @@ const NUM_REELS = 5;
 const NUM_ROWS = 3;
 let autoSpinInterval = null; // Variable to hold the interval for auto-spin
 let isSpinning = false; // Flag to prevent multiple spins during animation
+let autoSpinRemaining = 0; // New: Variable to track remaining auto spins
 
 // Définition des symboles et de leurs poids pour la volatilité (simplifiée)
 const SYMBOLS = ['🍒', '🍊', '🔔', '💎', '7️⃣', 'BAR', '⭐', '💯', '💣']; // Changed '💰' to '💯' and '💩' to '💣'
@@ -110,6 +111,7 @@ function initSlotMachine() {
     updateFreeSpinsDisplay();
     updateSlotMachineMode();
     updateSymbolStatsDisplay(); // Call to display symbol stats on init
+    updateAutoSpinDisplay(); // New: Initial call to update auto-spin display
 }
 
 function updateFreeSpinsDisplay() {
@@ -118,6 +120,19 @@ function updateFreeSpinsDisplay() {
         freeSpinsSpan.textContent = freeSpins;
     }
 }
+
+// New: Function to update the display for remaining auto spins
+function updateAutoSpinDisplay() {
+    const autoSpinRemainingDisplay = document.getElementById('auto-spin-remaining-display');
+    if (autoSpinRemainingDisplay) {
+        if (autoSpinInterval && autoSpinRemaining > 0) {
+            autoSpinRemainingDisplay.textContent = `Tours auto restants : ${autoSpinRemaining}`;
+        } else {
+            autoSpinRemainingDisplay.textContent = ''; // Clear text if auto-spin is not active
+        }
+    }
+}
+
 
 function updateSlotMachineMode() {
     const slotsGrid = document.getElementById('slots-grid');
@@ -140,7 +155,8 @@ function updateSlotMachineMode() {
                 betSelect.disabled = false; // Enable bet input when no free spins
             }
             if (autoSpinButton) {
-                autoSpinButton.disabled = false; // Enable auto-spin when no free spins
+                // Only enable if autoSpinRemaining is not active
+                autoSpinButton.disabled = (autoSpinRemaining > 0); 
             }
         }
     }
@@ -151,38 +167,54 @@ function toggleAutoSpin() {
     const autoSpinButton = document.getElementById('auto-spin-button');
     const spinButton = document.getElementById('spin-button');
     const betSelect = document.getElementById('bet-select'); 
+    const gameContainer = document.getElementById('game-container'); // Get the main game container for message box
 
     if (autoSpinInterval) {
         // Stop auto-spin
         clearInterval(autoSpinInterval);
         autoSpinInterval = null;
+        autoSpinRemaining = 0; // Reset remaining spins
         autoSpinButton.textContent = 'Auto Spin';
         spinButton.disabled = false;
         betSelect.disabled = false; 
+        updateAutoSpinDisplay(); // Update display to show no remaining spins
     } else {
         // Start auto-spin
+        const currentBet = parseInt(betSelect.value);
+        if (currentBet <= 0 || isNaN(currentBet)) {
+            showMessageBox("Veuillez entrer une mise valide pour l'auto-spin.", gameContainer, 'loss');
+            return;
+        }
+        if (firebaseService.getUserBalance() < currentBet && freeSpins === 0) {
+            showMessageBox("Solde insuffisant pour démarrer l'auto-spin !", gameContainer, 'loss');
+            return;
+        }
+
+        autoSpinRemaining = 100; // New: Set max auto spins
         autoSpinButton.textContent = 'Arrêter Auto Spin';
         spinButton.disabled = true; // Disable manual spin button
         betSelect.disabled = true; 
+        updateAutoSpinDisplay(); // Initial update for auto-spin display
 
         // Start the first spin immediately
         spinSlots();
 
         // Set up interval for subsequent spins
         autoSpinInterval = setInterval(async () => {
-            // Check conditions before spinning again
-            const currentBet = parseInt(betSelect.value); 
-            if (firebaseService.getUserBalance() < currentBet && freeSpins === 0) {
-                toggleAutoSpin(); // Stop auto-spin if balance is insufficient
-                // Using a custom message box instead of alert()
-                const gameContainer = document.getElementById('game-container');
-                showMessageBox("Solde insuffisant pour continuer l'auto-spin !", gameContainer, 'loss');
+            // New: Stop if auto-spin remaining is 0 or less, or if balance is insufficient
+            if (autoSpinRemaining <= 0 || (firebaseService.getUserBalance() < currentBet && freeSpins === 0)) {
+                toggleAutoSpin(); // Stop auto-spin
+                if (firebaseService.getUserBalance() < currentBet && freeSpins === 0) {
+                     showMessageBox("Solde insuffisant pour continuer l'auto-spin !", gameContainer, 'loss');
+                } else if (autoSpinRemaining <= 0) {
+                    showMessageBox("Auto-spin terminé (100 tours atteints).", gameContainer, 'info');
+                }
                 return;
             }
             if (!isSpinning) { // Only spin if not currently spinning
                 await spinSlots();
             }
-        }, 1000); // Check every 3 seconds for next spin
+        }, 3000); // Check every 3 seconds for next spin (adjust as needed for animation duration)
     }
 }
 
@@ -235,6 +267,13 @@ async function spinSlots() {
     if (!isFreeSpinRound) {
         await firebaseService.saveUserBalance(firebaseService.getUserBalance() - bet); // Deduct bet
     }
+
+    // New: If auto-spin is active, decrement the count and update display
+    if (autoSpinInterval) {
+        autoSpinRemaining--;
+        updateAutoSpinDisplay();
+    }
+
 
     const slotElements = document.querySelectorAll('#slots-grid .slot');
     const slotSymbolStrips = document.querySelectorAll('#slots-grid .slot-symbol-strip');
@@ -432,17 +471,21 @@ async function spinSlots() {
                 spinSlots();
             }, 1000); // Short delay (e.g., 1 second) between automatic free spins
         } else {
-            // If no free spins left, or it was a regular spin
-            if (!autoSpinInterval) {
-                // If auto-spin is not active, re-enable manual spin and bet controls
-                spinButton.disabled = false;
-                betSelect.disabled = false;
-            } else {
-                // If auto-spin was active and free spins just finished, re-enable auto-spin button
+            // New: Check if auto-spin is active and remaining spins are more than 0
+            if (autoSpinInterval && autoSpinRemaining > 0) {
+                // If auto-spin is active and free spins just finished, re-enable auto-spin button
                 // and potentially bet select if auto-spin is managing regular spins now.
                 // The autoSpinInterval itself will trigger the next regular spin.
                 autoSpinButton.disabled = false;
                 betSelect.disabled = false; // Re-enable bet select for regular auto-spin
+            } else if (!autoSpinInterval) {
+                // If auto-spin is not active, re-enable manual spin and bet controls
+                spinButton.disabled = false;
+                betSelect.disabled = false;
+            }
+             // New: If auto-spin finished due to reaching 0 spins, ensure it's stopped and display cleared
+             if (autoSpinInterval && autoSpinRemaining <= 0) {
+                toggleAutoSpin(); // This will stop the interval and reset the display
             }
         }
     }, 3000); // This is the 3-second pause after results are shown for all spins

@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Règle principale pour la collection 'users'
+    match /users/{userId} {
+      // PERMETTRE LA LECTURE DE TOUS LES DOCUMENTS UTILISATEUR POUR LE LEADERBOARD
+      // Tout utilisateur authentifié (request.auth != null) peut lire (allow read)
+      // n'importe quel document utilisateur dans cette collection.
+      allow read: if request.auth != null;
+
+      // Permettre la création d'un nouveau document :
+      // Un utilisateur authentifié peut créer SON PROPRE document,
+      // et les champs 'email', 'username', 'balance' doivent être présents et du bon type.
+      allow create: if request.auth != null &&
+                        request.auth.uid == userId &&
+                        request.resource.data.email is string &&
+                        request.resource.data.username is string &&
+                        request.resource.data.balance is number;
+      
+      // Permettre la mise à jour (UPDATE) de documents existants :
+      // Un utilisateur authentifié peut mettre à jour SON PROPRE document.
+      // Cette règle valide que si les champs 'balance', 'lastRewardTimestamp' ou 'activeCosmetics'
+      // sont présents dans la mise à jour, ils sont du bon type.
+      allow update: if request.auth != null &&
+                        request.auth.uid == userId &&
+                        // Si 'balance' est mis à jour, il doit être un nombre.
+                        (!('balance' in request.resource.data) || request.resource.data.balance is number) &&
+                        // Si 'lastRewardTimestamp' est mis à jour, il doit être un nombre.
+                        (!('lastRewardTimestamp' in request.resource.data) || request.resource.data.lastRewardData is number) &&
+                        // Si 'activeCosmetics' est mis à jour, il doit être une carte (map).
+                        (!('activeCosmetics' in request.resource.data) || request.resource.data.activeCosmetics is map) &&
+                        // Assurez-vous que l'email et la date de création ne sont pas modifiables par le client
+                        request.resource.data.email == resource.data.email &&
+                        request.resource.data.createdAt == resource.data.createdAt;
+
+      // Permet la suppression du compte si l'utilisateur est authentifié et que c'est son propre compte
+      allow delete: if request.auth != null && request.auth.uid == userId;
+
+      // Règles pour la sous-collection 'userCosmetics' (articles possédés par l'utilisateur)
+      match /userCosmetics/{cosmeticId} {
+        // Un utilisateur authentifié peut lire et écrire ses propres cosmétiques possédés
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Règle pour le jackpot progressif global
+    // Cette règle s'applique spécifiquement au document 'jackpot' dans la collection 'global'.
+    match /global/jackpot {
+      // Permet à tout utilisateur authentifié de lire le jackpot
+      allow read: if request.auth != null;
+      // Permet à tout utilisateur authentifié de mettre à jour le jackpot (pour les gains de machine à sous et l'incrémentation)
+      allow update: if request.auth != null;
+      // Empêche la création ou la suppression du document 'jackpot' par les clients.
+      // Le document 'jackpot' doit être initialisé par un administrateur ou via Cloud Functions.
+      allow create, delete: if false; 
+    }
+
+    // NOUVEAU : Règle pour la collection 'cosmetics' (articles de la boutique)
+    match /cosmetics/{cosmeticId} {
+      // Permet la lecture de tous les articles cosmétiques si l'utilisateur est authentifié.
+      // Cela permet à votre application de récupérer et d'afficher les articles disponibles dans la boutique.
+      allow read: if request.auth != null;
+      // Empêche les clients de créer, mettre à jour ou supprimer des articles dans cette collection.
+      // L'ajout/modification d'articles doit se faire via le script admin.
+      allow create, update, delete: if false;
+    }
+  }
+}

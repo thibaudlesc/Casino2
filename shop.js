@@ -1,10 +1,57 @@
 // shop.js
-// This file handles the logic and rendering for the in-game shop.
+// Ce fichier gère la logique et le rendu de la boutique en jeu.
 
 let _updateBalanceDisplay;
 let _showFloatingWinNumbers;
 let _currencyFormatter;
-let _allCosmetics = []; // Store all cosmetics locally in shop.js
+let _allCosmetics = []; // Stocke tous les cosmétiques localement dans shop.js
+let _userGeneratedImages = []; // Nouveau : Stocke les images générées par l'utilisateur localement dans shop.js
+
+// Données pour les trophées, avec des descriptions raffinées pour une distinction visuelle et sans texte
+const trophyImagesData = [
+    {
+        id: 'plastic_trophy',
+        name: 'Trophée de Plastique Bon Marché',
+        description: 'Un trophée rectangulaire en plastique moulé, de couleur terne et légèrement déformé. Il présente des bords grossiers et une surface non polie, avec des marques de moule visibles. Le design est générique, suggérant une production de masse à très faible coût. Aucun détail ni ornement, juste l\'essentiel.',
+        cost: 50000, // Coût fixe pour l'achat
+        costRange: '50 000 €' // Pour l'affichage
+    },
+    {
+        id: 'silver_engraved_plaque',
+        name: 'Plaque d\'Argent Gravée',
+        description: 'Un trophée rectangulaire en argent poli, avec des gravures de motifs géométriques classiques. La surface est brillante et réfléchissante, mais les ornements restent discrets. Il symbolise un succès notable et une reconnaissance croissante.',
+        cost: 250000,
+        costRange: '500 000 €'
+    },
+    {
+        id: 'gold_laurel_statue',
+        name: 'Statue d\'Or aux Lauriers',
+        description: 'Un trophée rectangulaire imposant en or pur 24 carats, sculpté avec des détails fins de lauriers et des symboles de victoire. La base est solide et la forme dégage de la grandeur. La lumière se reflète intensément, marquant un niveau de succès élevé et ostentatoire.',
+        cost: 1500000,
+        costRange: '5 000 000 €'
+    },
+    {
+        id: 'diamond_monolith',
+        name: 'Monolithe de Diamant Incrusté',
+        description: 'Un trophée rectangulaire massif en obsidienne polie, incrusté de multiples diamants bruts et taillés qui capturent la lumière. La forme est angulaire et puissante, avec des reflets éblouissants provenant des diamants. Il représente une prouesse exceptionnelle et une fortune considérable.',
+        cost: 5500000,
+        costRange: '50 000 000 €'
+    },
+    {
+        id: 'cosmic_shard',
+        name: 'Éclat Cosmique de Platine',
+        description: 'Un trophée rectangulaire futuriste en platine liquide et verre gravé au laser, contenant des nébuleuses en mouvement lent et des étoiles miniatures. Il émet une douce lueur phosphorescente, avec des motifs de galaxie complexes. Ce trophée symbolise une richesse et une influence quasi illimitées, transcendant les matériaux terrestres.',
+        cost: 250000000,
+        costRange: '500 000 000 €'
+    },
+    {
+        id: 'divine_aether_crystal',
+        name: 'Cristal d\'Éther Divin',
+        description: 'Le trophée ultime, une entité rectangulaire translucide faite de pure énergie cristallisée et de lumière, pulsant doucement avec des couleurs changeantes. Des motifs cosmiques complexes et des fractales se déplacent à l\'intérieur, créant une illusion de profondeur infinie. Des particules d\'or pur flottent autour de la surface. Ce trophée n\'est pas un objet, mais un fragment d\'une puissance divine, symbolisant une richesse et un statut absolus, atteignant le niveau des divinités du casino.',
+        cost: 1000000000, // Un milliard, juste pour le fun
+        costRange: '1 000 000 000 €'
+    }
+];
 
 /**
  * Initializes the shop module.
@@ -17,280 +64,248 @@ function initShop(updateBalanceDisplayFn, showFloatingWinNumbersFn, currencyForm
     _updateBalanceDisplay = updateBalanceDisplayFn;
     _showFloatingWinNumbers = showFloatingWinNumbersFn;
     _currencyFormatter = currencyFormatterFn;
-    _allCosmetics = allCosmeticsData; // Set the local cosmetics data
+    _allCosmetics = allCosmeticsData; // Définit les données cosmétiques locales
+    _userGeneratedImages = firebaseService.getUserGeneratedImages(); // Charge les images générées par l'utilisateur
 
-    // Log the received cosmetic data to the console for debugging
+    // Enregistre les données cosmétiques reçues pour le débogage
     console.log("Shop.js: Données cosmétiques reçues pour l'initialisation de la boutique :", _allCosmetics);
+    console.log("Shop.js: Images générées par l'utilisateur reçues :", _userGeneratedImages);
 
-    renderShop(); // Initial render of the shop
+
+    // S'assure que les rappels d'images générées sont configurés
+    firebaseService.onUserImagesUpdated((images) => {
+        _userGeneratedImages = images;
+        console.log("Shop.js: Mise à jour des images générées par l'utilisateur :", _userGeneratedImages);
+        renderShop(); // Ré-affiche la boutique après la mise à jour
+    });
+
+    renderShop(); // Rendu initial de la boutique
 }
 
 /**
- * Renders the shop interface with available cosmetics.
+ * Renders the shop interface with available cosmetics and generated images.
  */
 async function renderShop() {
     const shopContainer = document.getElementById('shop-container');
-    const cosmeticGrid = document.getElementById('cosmetic-grid');
-    const shopMessage = document.getElementById('shop-message');
-
-    console.log("Shop.js: Début du rendu de la boutique.");
-
-    if (!shopContainer || !cosmeticGrid || !shopMessage) {
-        console.error("Shop.js: Éléments de l'interface utilisateur de la boutique non trouvés (shop-container, cosmetic-grid, shop-message).");
+    if (!shopContainer) {
+        console.error("Shop.js: #shop-container non trouvé.");
         return;
     }
-
-    shopMessage.textContent = ''; // Clear previous messages
-    _updateBalanceDisplay(); // Ensure balance is up-to-date
-
-    // Use the locally stored _allCosmetics
-    // Sort cosmetics by price in ascending order globally for initial categorization,
-    // but the 'slot_drop_rates_combined' category will have its display order
-    // specifically sorted by the price of the *next purchasable level*.
-    const allCosmetics = [..._allCosmetics].sort((a, b) => a.price - b.price);
-    const userOwnedCosmetics = firebaseService.getUserOwnedCosmetics(); // Array of owned cosmetic IDs
-    const activeCosmetics = firebaseService.getActiveCosmetics(); // Object of active cosmetics
-
-    const userBalance = firebaseService.getUserBalance();
-
-    console.log("Shop.js: Rendu de la boutique. Tous les cosmétiques disponibles :", allCosmetics, "Possédés par l'utilisateur :", userOwnedCosmetics, "Actifs :", activeCosmetics, "Solde de l'utilisateur :", userBalance);
-
-    cosmeticGrid.innerHTML = ''; // Clear existing items
-
-    if (!allCosmetics || allCosmetics.length === 0) {
-        console.log("Shop.js: Aucun article cosmétique disponible ou non chargé.");
-        cosmeticGrid.innerHTML = '<p class="loss-text">Aucun article cosmétique disponible pour le moment.</p>';
+    const cosmeticGrid = shopContainer.querySelector('#cosmetic-grid');
+    if (!cosmeticGrid) {
+        console.error("Shop.js: #cosmetic-grid non trouvé.");
         return;
     }
+    const shopMessage = document.getElementById('shop-message'); // Non utilisé actuellement, peut être supprimé si inutile
 
-    // Group cosmetics by type for better display
-    const categorizedCosmetics = {
-        // Nouvelle catégorie pour les taux de drop de machine à sous, combinant bonus et malus
-        'slot_drop_rates_combined': { name: 'Taux de Drop des Machines à Sous', items: [] }, 
-        'slot_theme': { name: 'Thèmes de Machine à Sous', items: [] },
-        'other': { name: 'Autres', items: [] }
-    };
+    cosmeticGrid.innerHTML = ''; // Efface les éléments précédents
 
-    allCosmetics.forEach(cosmetic => {
-        if (cosmetic.type === 'slot_symbol_drop_rate_bonus' || cosmetic.type === 'slot_bomb_drop_rate_debuff') {
-            // Ajouter les bonus et les débuffs de taux de drop à la nouvelle catégorie combinée
-            categorizedCosmetics['slot_drop_rates_combined'].items.push(cosmetic);
-        } else if (categorizedCosmetics[cosmetic.type]) {
-            categorizedCosmetics[cosmetic.type].items.push(cosmetic);
-        } else {
-            categorizedCosmetics['other'].items.push(cosmetic);
+    // Logic to determine which cosmetics to display (filter bonus/debuff items)
+    const cosmeticsToDisplay = [];
+    const maxOwnedLevelsMap = new Map(); // Key: `${type}-${symbol}`, Value: max_level_owned
+    const addedNextLevelBonus = new Set(); // Key: `${type}-${symbol}` to ensure only one next level is added per unique bonus/debuff
+
+    // First, determine the highest owned level for each unique bonus/debuff type and symbol
+    firebaseService.getUserOwnedCosmetics().forEach(ownedCosmeticId => {
+        const ownedCosmetic = _allCosmetics.find(c => c.id === ownedCosmeticId);
+        if (ownedCosmetic && (ownedCosmetic.type === 'slot_symbol_drop_rate_bonus' || ownedCosmetic.type === 'slot_bomb_drop_rate_debuff')) {
+            const key = `${ownedCosmetic.type}-${ownedCosmetic.symbol}`;
+            const currentLevel = ownedCosmetic.level || 0;
+            if (!maxOwnedLevelsMap.has(key) || currentLevel > maxOwnedLevelsMap.get(key)) {
+                maxOwnedLevelsMap.set(key, currentLevel);
+            }
         }
     });
 
-    // Sort the combined drop rate items by level for consistent display within grouped symbols.
-    // The main sorting for display order of symbols will be done later.
-    categorizedCosmetics['slot_drop_rates_combined'].items.sort((a, b) => a.level - b.level);
+    // Then, populate `cosmeticsToDisplay`
+    _allCosmetics.forEach(cosmetic => {
+        if (cosmetic.type === 'slot_symbol_drop_rate_bonus' || cosmetic.type === 'slot_bomb_drop_rate_debuff') {
+            const key = `${cosmetic.type}-${cosmetic.symbol}`;
+            const highestOwnedLevel = maxOwnedLevelsMap.get(key) || 0; // If not owned, consider level 0
+            const desiredLevel = highestOwnedLevel + 1;
 
-
-    for (const categoryKey in categorizedCosmetics) {
-        const category = categorizedCosmetics[categoryKey];
-        
-        if (category.items.length === 0 && categoryKey !== 'other') { // Skip empty categories unless it's 'other' (which might be empty by design)
-            continue;
+            // Only add the cosmetic if its level matches the desired next level,
+            // and we haven't already added the next level for this specific bonus/debuff type+symbol.
+            if (cosmetic.level === desiredLevel && !addedNextLevelBonus.has(key)) {
+                cosmeticsToDisplay.push(cosmetic);
+                addedNextLevelBonus.add(key); // Mark that we've added the next level for this type+symbol
+            }
+        } else {
+            // Always add non-level-based cosmetics
+            cosmeticsToDisplay.push(cosmetic);
         }
+    });
 
-        const categorySection = document.createElement('div');
-        categorySection.classList.add('shop-category-section');
-        categorySection.innerHTML = `<h3>${category.name}</h3>`;
-        const categoryGridElement = document.createElement('div'); // Renamed to avoid confusion with parent cosmeticGrid
-        categoryGridElement.classList.add('cosmetic-grid');
-        categorySection.appendChild(categoryGridElement);
 
-        // Specific rendering logic for the combined 'slot_drop_rates_combined' category
-        if (categoryKey === 'slot_drop_rates_combined') {
-            // Regrouper les cosmétiques par symbole
-            const groupedBySymbol = {};
-            category.items.forEach(cosmetic => {
-                if (!groupedBySymbol[cosmetic.symbol]) {
-                    groupedBySymbol[cosmetic.symbol] = [];
-                }
-                groupedBySymbol[cosmetic.symbol].push(cosmetic);
-            });
+    // Rend les éléments cosmétiques filtrés
+    if (cosmeticsToDisplay.length === 0) {
+        cosmeticGrid.innerHTML = '<p class="loss-text">Aucun cosmétique disponible pour le moment.</p>';
+    } else {
+        cosmeticsToDisplay.forEach(cosmetic => {
+            const cosmeticItem = document.createElement('div');
+            cosmeticItem.classList.add('cosmetic-item');
 
-            const MAX_LEVEL_DROP_RATE = 5;
+            const isOwned = firebaseService.getUserOwnedCosmetics().includes(cosmetic.id);
+            const isActive = cosmetic.type && firebaseService.getActiveCosmetics()[cosmetic.type] === (cosmetic.value || cosmetic.id);
 
-            // Prepare an array to hold symbols with their next purchasable level (or maxed status)
-            const symbolsForDisplay = [];
-
-            // Determine the next purchasable cosmetic for each symbol
-            for (const symbol in groupedBySymbol) {
-                const itemsForSymbol = groupedBySymbol[symbol]; // Already sorted by level from above
-                
-                const highestOwnedLevelForSymbol = itemsForSymbol.filter(c => userOwnedCosmetics.includes(c.id))
-                                                                  .reduce((maxLevel, c) => Math.max(maxLevel, c.level), 0);
-                
-                let nextLevelCosmetic = null;
-                let isMaxLevel = false;
-
-                if (highestOwnedLevelForSymbol < MAX_LEVEL_DROP_RATE) { 
-                    nextLevelCosmetic = itemsForSymbol.find(c => c.level === highestOwnedLevelForSymbol + 1);
-                } else if (highestOwnedLevelForSymbol === MAX_LEVEL_DROP_RATE) {
-                    isMaxLevel = true;
-                }
-                
-                symbolsForDisplay.push({
-                    symbol,
-                    nextLevelCosmetic,
-                    itemsForSymbol, // Keep reference for display logic
-                    highestOwnedLevelForSymbol,
-                    isMaxLevel
-                });
+            // Ajoute les classes "owned" et "equipped" pour le style
+            if (isOwned) {
+                cosmeticItem.classList.add('owned');
+            }
+            if (isActive) {
+                cosmeticItem.classList.add('equipped');
             }
 
-            // Sort symbols based on the price of their next available cosmetic (cheapest first)
-            // Maxed out items will be pushed to the end.
-            symbolsForDisplay.sort((a, b) => {
-                if (a.isMaxLevel && b.isMaxLevel) return 0; // Both maxed, maintain current relative order
-                if (a.isMaxLevel) return 1; // 'a' is maxed, push it to the end
-                if (b.isMaxLevel) return -1; // 'b' is maxed, 'a' comes before it
+            let buttonHtml = '';
+            // Determine the displayed effect value based on the type
+            const effectValue = (cosmetic.value * 100).toFixed(0); // Convert to percentage and remove decimals
 
-                // If one is not maxed and the other is, the non-maxed one comes first (handled by above)
-                // If both are not maxed, sort by price
-                const priceA = a.nextLevelCosmetic ? a.nextLevelCosmetic.price : Infinity; // If no next cosmetic (shouldn't happen for non-maxed)
-                const priceB = b.nextLevelCosmetic ? b.nextLevelCosmetic.price : Infinity;
-                return priceA - priceB;
-            });
-
-            // Parcourir chaque groupe de symboles et afficher leurs niveaux
-            symbolsForDisplay.forEach(({ symbol, nextLevelCosmetic, itemsForSymbol, highestOwnedLevelForSymbol, isMaxLevel }) => {
-                const itemElement = document.createElement('div');
-                itemElement.classList.add('cosmetic-item');
-                
-                if (isMaxLevel) {
-                    itemElement.classList.add('equipped'); // Mark visually as max level
-                } else if (highestOwnedLevelForSymbol > 0) {
-                    itemElement.classList.add('owned'); // Mark as owned (some levels)
-                }
-
-                let buttonHTML = '';
-                let displayPrice = '';
-                let displayDescription = '';
-                let canPurchase = false;
-                
-                // Determine multiplier for display (positive for bonus, negative for debuff)
-                const cosmeticTypeForDisplay = nextLevelCosmetic ? nextLevelCosmetic.type : (itemsForSymbol[0] ? itemsForSymbol[0].type : null);
-                const valueMultiplier = cosmeticTypeForDisplay === 'slot_bomb_drop_rate_debuff' ? -1 : 1; 
-
-                if (isMaxLevel) {
-                    buttonHTML = `<button class="game-button equipped-button" disabled>Niveau Max (${MAX_LEVEL_DROP_RATE})</button>`;
-                    displayPrice = 'Terminé';
-                    const effectLabel = itemsForSymbol[0].type === 'slot_bomb_drop_rate_debuff' ? 'diminué' : 'augmenté';
-                    displayDescription = `Taux de drop de ${symbol} ${effectLabel} de ${highestOwnedLevelForSymbol * valueMultiplier}% (Max).`;
-                } else if (nextLevelCosmetic) {
-                    canPurchase = userBalance >= nextLevelCosmetic.price;
-                    buttonHTML = `<button class="game-button buy-button" data-cosmetic-id="${nextLevelCosmetic.id}" data-action="buy"${!canPurchase ? ' disabled' : ''}>Acheter (Niveau ${nextLevelCosmetic.level})</button>`;
-                    displayPrice = _currencyFormatter.format(nextLevelCosmetic.price) + '€';
-                    const effectLabel = nextLevelCosmetic.type === 'slot_bomb_drop_rate_debuff' ? 'Diminue de ' : 'Augmente de ';
-                    displayDescription = `${effectLabel}${nextLevelCosmetic.level * valueMultiplier}% le taux de drop du symbole ${symbol}.`;
+            if (cosmetic.type === 'slot_symbol_drop_rate_bonus' || cosmetic.type === 'slot_bomb_drop_rate_debuff') {
+                if (isOwned) { // If this specific 'next level' item is now owned after a purchase
+                    buttonHtml = `<button class="game-button" disabled>Possédé (Nv ${cosmetic.level})</button>`;
                 } else {
-                    buttonHTML = `<button class="game-button disabled" disabled>Indisponible</button>`;
-                    displayPrice = 'N.A.';
-                    displayDescription = `Amélioration pour ${symbol} indisponible.`;
+                    buttonHtml = `<button class="game-button purchase-button" data-id="${cosmetic.id}" data-action="purchase">Acheter (${_currencyFormatter.format(cosmetic.price)}€)</button>`;
                 }
-                
-                const currentLevelText = highestOwnedLevelForSymbol > 0 ? ` (Niveau Actuel: ${highestOwnedLevelForSymbol})` : '';
-                const cosmeticNamePrefix = itemsForSymbol[0].type === 'slot_bomb_drop_rate_debuff' ? 'Réduction Taux de Bombe' : 'Boost Taux de Drop';
 
-                itemElement.innerHTML = `
-                    <div class="cosmetic-image">
-                        <span>${symbol}</span>
-                    </div>
-                    <div class="cosmetic-name">${cosmeticNamePrefix} ${symbol} ${currentLevelText}</div>
-                    <div class="cosmetic-price">${displayPrice}</div>
-                    ${buttonHTML}
-                    <div class="cosmetic-description">${displayDescription}</div>
+                // Description for bonus/debuff items should be generic, not showing the current level value
+                const descriptionText = cosmetic.type === 'slot_symbol_drop_rate_bonus'
+                    ? `Augmente de ${effectValue}% le taux de drop de symbole.`
+                    : `Réduit de ${effectValue}% le taux de drop de bombe.` ;
+
+                cosmeticItem.innerHTML = `
+                    <div class="cosmetic-image">${cosmetic.symbol}</div>
+                    <h3 class="cosmetic-name">${cosmetic.name}</h3>
+                    <p class="cosmetic-description">${descriptionText}</p>
+                    <p class="cosmetic-price">Effet: ${effectValue}%</p>
+                    ${buttonHtml}
                 `;
-                categoryGridElement.appendChild(itemElement);
-            });
-        } else { // Handle other categories (themes, etc.)
-            category.items.forEach(cosmetic => {
-                const isOwned = userOwnedCosmetics.includes(cosmetic.id);
-                const isActive = activeCosmetics[cosmetic.id] !== undefined; // Check if the exact cosmetic ID is active
-                
-                const itemElement = document.createElement('div');
-                itemElement.classList.add('cosmetic-item');
-                if (isActive) {
-                    itemElement.classList.add('equipped');
-                } else if (isOwned) {
-                    itemElement.classList.add('owned');
-                }
 
-                let buttonHTML = '';
-                if (isActive) {
-                    buttonHTML = `<button class="game-button equipped-button" disabled>Équipé</button>`;
-                } else if (isOwned) {
-                    // For non-drop-rate items, the "Equip" button is always needed if it's not active
-                    buttonHTML = `<button class="game-button equip-button" data-cosmetic-id="${cosmetic.id}" data-action="equip">Équiper</button>`;
+            } else { // Gère les cosmétiques généraux
+                if (isOwned) {
+                    if (isActive) {
+                        buttonHtml = `<button class="game-button deactivate-button" data-id="${cosmetic.id}" data-action="deactivate">Désactiver</button>`;
+                    } else {
+                        buttonHtml = `<button class="game-button activate-button" data-id="${cosmetic.id}" data-action="equip">Équiper</button>`;
+                    }
                 } else {
-                    const canPurchase = userBalance >= cosmetic.price;
-                    buttonHTML = `<button class="game-button buy-button" data-cosmetic-id="${cosmetic.id}" data-action="buy"${!canPurchase ? ' disabled' : ''}>Acheter (${_currencyFormatter.format(cosmetic.price)}€)</button>`;
+                    buttonHtml = `<button class="game-button purchase-button" data-id="${cosmetic.id}" data-action="purchase">Acheter (${_currencyFormatter.format(cosmetic.price)}€)</button>`;
                 }
 
-                let imageContent;
-                if (cosmetic.imageUrl) {
-                    imageContent = `<img src="${cosmetic.imageUrl}" alt="${cosmetic.name}" onerror="this.onerror=null;this.src='https://placehold.co/100x100/3f5161/f5f5f5?text=IMG';" />`;
-                } else if (cosmetic.icon) {
-                    imageContent = `<span>${cosmetic.icon}</span>`;
-                } else if (cosmetic.emoji) {
-                    imageContent = `<span>${cosmetic.emoji}</span>`;
-                } else {
-                    imageContent = `<span>✨</span>`;
-                }
-
-                itemElement.innerHTML = `
-                    <div class="cosmetic-image">
-                        ${imageContent}
-                    </div>
-                    <div class="cosmetic-name">${cosmetic.name}</div>
-                    <div class="cosmetic-price">${isOwned ? 'Possédé' : _currencyFormatter.format(cosmetic.price) + '€'}</div>
-                    ${buttonHTML}
-                    <div class="cosmetic-description">${cosmetic.description}</div>
+                cosmeticItem.innerHTML = `
+                    <div class="cosmetic-image">${cosmetic.emoji || '✨'}</div>
+                    <h3 class="cosmetic-name">${cosmetic.name}</h3>
+                    <p class="cosmetic-description">${cosmetic.description}</p>
+                    <p class="cosmetic-price">${_currencyFormatter.format(cosmetic.price)}€</p>
+                    ${buttonHtml}
                 `;
-                categoryGridElement.appendChild(itemElement);
-            });
-        }
-        cosmeticGrid.appendChild(categorySection); // Add the section to the main grid
+            }
+            cosmeticGrid.appendChild(cosmeticItem);
+        });
+    }
+
+    // Ajoute la section pour les images générées
+    const existingImageSection = shopContainer.querySelector('#image-trophy-section');
+    if (existingImageSection) {
+        existingImageSection.remove(); // Supprime l'ancienne section si elle existe
+    }
+
+    const imageTrophySection = document.createElement('div');
+    imageTrophySection.id = 'image-trophy-section'; // Ajoute un ID pour pouvoir le supprimer/remplacer
+    imageTrophySection.innerHTML = `
+        <h2 style="color: #a7f3d0; margin-top: 40px; margin-bottom: 25px; font-family: 'Orbitron', sans-serif; text-shadow: 0 0 15px rgba(167, 243, 208, 0.8);">🖼️ Trophées d'Images Générées 🖼️</h2>
+        <p class="text-gray-400 mb-4">Générez des trophées uniques et ajoutez-les à votre collection !</p>
+        <div id="trophy-generation-grid" class="cosmetic-grid">
+            </div>
+        <div id="loading-area" class="flex flex-col items-center mt-8 mb-8">
+            <p id="loading-text" class="mt-2 text-gray-400 hidden">Génération de l'image en cours...</p>
+        </div>
+        <div class="mt-4 flex flex-col items-center">
+            <h3 class="text-xl font-semibold mb-2" style="color: #e2e8f0;">Image Générée (Aperçu)</h3>
+            <img id="generated-trophy-preview" class="image-display" src="https://placehold.co/400x200/3e3e60/e0e0e0?text=Votre+trophée+apparaîtra+ici" alt="Aperçu du trophée généré">
+            </div>
+
+        <h3 style="color: #a7f3d0; margin-top: 40px; margin-bottom: 25px; font-family: 'Orbitron', sans-serif; text-shadow: 0 0 15px rgba(167, 243, 208, 0.8);">Votre Collection de Trophées d'Images</h3>
+        <div id="user-trophy-collection-grid" class="cosmetic-grid">
+            <p id="no-images-message" class="text-gray-400">Aucune image de trophée dans votre collection.</p>
+        </div>
+    `;
+    shopContainer.appendChild(imageTrophySection);
+
+    const trophyGenerationGrid = document.getElementById('trophy-generation-grid');
+    trophyGenerationGrid.innerHTML = '';
+    trophyImagesData.forEach(trophy => {
+        const trophyItem = document.createElement('div');
+        trophyItem.classList.add('cosmetic-item');
+        trophyItem.innerHTML = `
+            <h3 class="cosmetic-name">${trophy.name}</h3>
+            <p class="cosmetic-description">${trophy.description}</p>
+            <p class="cosmetic-price">Génération & Achat : ${_currencyFormatter.format(trophy.cost)}€</p>
+            <button class="game-button generate-trophy-button" data-id="${trophy.id}" data-description="${trophy.description}" data-cost="${trophy.cost}">Générer & Acheter</button>
+        `;
+        trophyGenerationGrid.appendChild(trophyItem);
+    });
+
+    // Affiche les images générées par l'utilisateur
+    const userTrophyCollectionGrid = document.getElementById('user-trophy-collection-grid');
+    const noImagesMessage = document.getElementById('no-images-message');
+    userTrophyCollectionGrid.innerHTML = ''; // Efface les images précédentes
+    if (_userGeneratedImages.length > 0) {
+        noImagesMessage.style.display = 'none';
+        _userGeneratedImages.forEach(img => {
+            const imgItem = document.createElement('div');
+            imgItem.classList.add('cosmetic-item');
+            imgItem.innerHTML = `
+                <h3 class="cosmetic-name">${img.name}</h3>
+                <img src="${img.url}" alt="${img.name}" class="cosmetic-image-display">
+                <p class="cosmetic-price">Coût d'achat: ${_currencyFormatter.format(img.cost)}€</p>
+            `;
+            userTrophyCollectionGrid.appendChild(imgItem);
+        });
+    } else {
+        noImagesMessage.style.display = 'block';
     }
 
 
-    // Attach event listeners to the grid buttons (delegated to cosmeticGrid)
-    cosmeticGrid.removeEventListener('click', handleShopButtonClick); // Remove old listener to avoid duplicates
-    cosmeticGrid.addEventListener('click', handleShopButtonClick); // Add new listener
-    console.log("Shop.js: Fin du rendu de la boutique. Écouteurs d'événements attachés.");
+    // Rattache les écouteurs d'événements pour les actions cosmétiques
+    shopContainer.querySelectorAll('.purchase-button, .activate-button, .deactivate-button').forEach(button => {
+        button.removeEventListener('click', handleCosmeticAction); // Prévient les écouteurs en double
+        button.addEventListener('click', handleCosmeticAction);
+    });
+
+    // Ajoute un écouteur d'événements pour les boutons de génération d'images
+    shopContainer.querySelectorAll('.generate-trophy-button').forEach(button => {
+        button.removeEventListener('click', handleGenerateTrophyImage); // Prévient les écouteurs en double
+        button.addEventListener('click', handleGenerateTrophyImage);
+    });
 }
 
 /**
- * Handles click events on shop buttons.
+ * Handles purchase/equip/deactivate actions for cosmetic items.
  * @param {Event} event - The click event.
  */
-async function handleShopButtonClick(event) {
-    const shopContainer = document.getElementById('shop-container');
+async function handleCosmeticAction(event) {
     const button = event.target;
-    if (!button.classList.contains('game-button')) return;
-
-    const cosmeticId = button.dataset.cosmeticId;
+    const cosmeticId = button.dataset.id;
     const action = button.dataset.action;
-    const cosmetic = _allCosmetics.find(c => c.id === cosmeticId);
 
+    const cosmetic = _allCosmetics.find(c => c.id === cosmeticId);
     if (!cosmetic) {
-        console.error(`Shop.js: Cosmétique introuvable pour l'ID : ${cosmeticId}`);
-        showMessageBox("Cosmétique introuvable.", shopContainer, 'loss');
+        showMessageBox("Erreur: Cosmétique introuvable.", document.getElementById('shop-container'), 'loss');
         return;
     }
 
-    console.log(`Shop.js: Action sur le cosmétique "${cosmetic.name}" : ${action}`);
+    const shopContainer = document.getElementById('shop-container');
 
-    if (action === 'buy') {
+    if (action === 'purchase') {
         const result = await firebaseService.purchaseCosmetic(cosmetic);
         if (result.success) {
-            showMessageBox(`Vous avez acheté ${cosmetic.name} !`, shopContainer, 'win');
-            // No need to explicitly reload user cosmetics or active cosmetics, firebaseService does this
-            // and calls the callbacks which will trigger renderShop
+            let message = `${cosmetic.name} a été acheté avec succès !`;
+            if (cosmetic.type === 'slot_symbol_drop_rate_bonus' || cosmetic.type === 'slot_bomb_drop_rate_debuff') {
+                const effectValue = (cosmetic.value * 100).toFixed(0);
+                message = `${cosmetic.name} (Niveau ${cosmetic.level}) a été acheté ! Effet : ${cosmetic.type === 'slot_symbol_drop_rate_bonus' ? 'Augmentation' : 'Réduction'} de ${effectValue}% du taux de drop.`;
+            }
+            showMessageBox(message, shopContainer, 'win');
+            _updateBalanceDisplay(firebaseService.getUserBalance()); // Met à jour l'affichage du solde
         } else {
             console.error("Shop.js: Échec de l'achat:", result.error.message);
             showMessageBox(`Échec de l'achat : ${result.error.message}`, shopContainer, 'loss');
@@ -299,18 +314,105 @@ async function handleShopButtonClick(event) {
         const result = await firebaseService.activateCosmetic(cosmetic);
         if (result.success) {
             showMessageBox(`${cosmetic.name} est maintenant équipé !`, shopContainer, 'win');
-            // No need to explicitly reload user cosmetics or active cosmetics, firebaseService does this
-            // and calls the callbacks which will trigger renderShop
         } else {
             console.error("Shop.js: Échec de l'équipement:", result.error.message);
             showMessageBox(`Échec de l'équipement : ${result.error.message}`, shopContainer, 'loss');
         }
+    } else if (action === 'deactivate') {
+        const result = await firebaseService.deactivateCosmetic(cosmetic.id);
+        if (result.success) {
+            showMessageBox(`${cosmetic.name} a été désactivé.`, shopContainer, 'win');
+        } else {
+            console.error("Shop.js: Échec de la désactivation:", result.error.message);
+            showMessageBox(`Échec de la désactivation : ${result.error.message}`, shopContainer, 'loss');
+        }
     }
-    renderShop(); // Always re-render to reflect changes
+    renderShop(); // Toujours re-rendre pour refléter les changements
+}
+
+/**
+ * Gère la génération et l'achat automatique d'une image de trophée.
+ * @param {Event} event - L'événement de clic.
+ */
+async function handleGenerateTrophyImage(event) {
+    const button = event.target;
+    const trophyId = button.dataset.id;
+    const description = button.dataset.description;
+    const cost = parseInt(button.dataset.cost);
+
+    const generatedTrophyPreview = document.getElementById('generated-trophy-preview');
+    const loadingText = document.getElementById('loading-text');
+    const shopContainer = document.getElementById('shop-container');
+
+    // Vérifie le solde avant de générer
+    if (firebaseService.getUserBalance() < cost) {
+        showMessageBox("Solde insuffisant pour générer et acheter cette image.", shopContainer, 'loss');
+        return;
+    }
+
+    // Désactive tous les boutons de génération
+    document.querySelectorAll('.generate-trophy-button').forEach(btn => btn.disabled = true);
+    
+    generatedTrophyPreview.src = 'https://placehold.co/400x200/3e3e60/e0e0e0?text=Génération+en+cours...'; // Placeholder
+    loadingText.classList.remove('hidden');
+
+    const prompt = `Créez un trophée rectangulaire pour un casino en ligne. Le trophée doit avoir un ratio d'environ 2:1 (largeur:hauteur), être solide et sculptural. Il doit intégrer visuellement les éléments suivants: "${description}". Le style doit être réaliste et visuellement distinct pour marquer sa gamme de prix. ABSOLUMENT AUCUN TEXTE, LETTRE, CHIFFRE OU SYMBOLE.`;
+
+    try {
+        const payload = { instances: { prompt: prompt }, parameters: { "sampleCount": 1 } };
+        const apiKey = "AIzaSyD-NXS8vJnykWFq9RSF78Dxl--67wXo7bw"; // Canvas fournira automatiquement ceci à l'exécution
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+            const imageUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+            generatedTrophyPreview.src = imageUrl;
+            showMessageBox("Aperçu du trophée généré !", shopContainer, 'win');
+
+            // --- L'achat se fait directement ici ---
+            const base64Image = result.predictions[0].bytesBase64Encoded;
+            const name = trophyImagesData.find(t => t.id === trophyId).name; // Récupère le nom du trophée
+
+            console.log("Shop.js: Image générée avec succès. Tentative d'achat automatique.");
+            console.log("Shop.js: Données envoyées à storeGeneratedImage:", { name, cost, base64Image: base64Image.substring(0, 50) + "..." });
+
+            const storeResult = await firebaseService.storeGeneratedImage(`data:image/png;base64,${base64Image}`, name, cost);
+            
+            console.log("Shop.js: Résultat de storeGeneratedImage (achat automatique):", storeResult);
+
+            if (storeResult.success) {
+                showMessageBox("Trophée acheté et ajouté à votre collection !", shopContainer, 'win');
+                _updateBalanceDisplay(firebaseService.getUserBalance()); // Met à jour l'affichage du solde
+                renderShop(); // Ré-affiche pour montrer la nouvelle image dans la collection
+            } else {
+                showMessageBox(`Échec de l'achat automatique du trophée : ${storeResult.error.message}`, shopContainer, 'loss');
+                console.error("Shop.js: Erreur lors de l'achat automatique du trophée:", storeResult.error);
+            }
+
+        } else {
+            console.error("Shop.js: Erreur lors de la génération de l'image du trophée: Structure de réponse inattendue ou contenu manquant.");
+            generatedTrophyPreview.src = 'https://placehold.co/400x200/FF0000/FFFFFF?text=Erreur+de+génération';
+            showMessageBox("Échec de la génération du trophée. Veuillez réessayer.", shopContainer, 'loss');
+        }
+    } catch (error) {
+        console.error("Shop.js: Erreur lors de l'appel à l'API de génération d'image de trophée:", error);
+        generatedTrophyPreview.src = 'https://placehold.co/400x200/FF0000/FFFFFF?text=Erreur+de+connexion';
+        showMessageBox("Erreur de connexion lors de la génération du trophée.", shopContainer, 'loss');
+    } finally {
+        loadingText.classList.add('hidden');
+        document.querySelectorAll('.generate-trophy-button').forEach(btn => btn.disabled = false); // Réactive les boutons
+    }
 }
 
 
-// Utility function for custom message boxes (instead of alert/confirm)
+// Fonction utilitaire pour les boîtes de message personnalisées (au lieu d'alert/confirm)
 function showMessageBox(message, parentElement, type = 'info') {
     const messageBox = document.createElement('div');
     messageBox.classList.add('message-box');
@@ -322,12 +424,9 @@ function showMessageBox(message, parentElement, type = 'info') {
         messageBox.classList.add('win-text');
     }
 
-    parentElement.appendChild(messageBox); // Add to the main game container or shop container
+    parentElement.appendChild(messageBox); // Ajoute au conteneur principal du jeu ou de la boutique
 
     setTimeout(() => {
         messageBox.remove();
-    }, 2500); // Message disappears after 2.5 seconds
+    }, 2500); // Le message disparaît après 2.5 secondes
 }
-
-// Expose initShop globally so gameLogic.js can call it
-window.initShop = initShop;

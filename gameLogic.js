@@ -1,59 +1,62 @@
 // gameLogic.js
-// This file handles all UI interactions and game flow,
-// interacting with firebaseService.js for data operations.
+// Ce fichier gère toutes les interactions de l'interface utilisateur et le déroulement du jeu,
+// en interagissant avec firebaseService.js pour les opérations de données.
 
-// Global variables for game state and UI elements
-let currentGame = null; // Stores the currently active game (e.g., 'slotMachine', 'blackjack')
+// Variables globales pour l'état du jeu et les éléments de l'interface utilisateur
+let currentGame = null; // Stocke le jeu actuellement actif (par exemple, 'slotMachine', 'blackjack')
 let progressiveJackpotInterval = null;
 let rewardCountdownInterval = null;
 
-// New formatter for currency display with French locale for thousands separator
+// Nouveau formateur pour l'affichage de la monnaie avec le format français pour les séparateurs de milliers
 const currencyFormatter = new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    setupAuthUIListeners(); // Set up listeners for authentication UI
-    setupGameMenuListeners(); // Set up listeners for game selection
+    setupAuthUIListeners(); // Configure les écouteurs pour l'interface utilisateur d'authentification
+    setupGameMenuListeners(); // Configure les écouteurs pour la sélection du jeu
 
-    // Set up callbacks for Firebase Service to notify gameLogic
+    // Configure les fonctions de rappel pour que Firebase Service notifie gameLogic
     firebaseService.setAuthStateChangedCallback(handleAuthStateChange);
     firebaseService.setUserDataLoadedCallback(handleUserDataLoaded);
     firebaseService.setBalanceUpdatedCallback(updateBalanceDisplay);
     firebaseService.setJackpotUpdatedCallback(updateProgressiveJackpotDisplay);
     firebaseService.setLeaderboardUpdatedCallback(updateLeaderboardDisplay);
     firebaseService.setRewardDataLoadedCallback(handleRewardDataLoaded);
-    firebaseService.onUserCosmeticsUpdated(handleUserCosmeticsUpdated); // New: Listen for user cosmetics
-    firebaseService.onActiveCosmeticsUpdated(handleActiveCosmeticsUpdated); // New: Listen for active cosmetics
-    firebaseService.onAllCosmeticsLoaded(handleAllCosmeticsLoaded); // New: Listen for all available cosmetics
+    firebaseService.onUserCosmeticsUpdated(handleUserCosmeticsUpdated);
+    firebaseService.onActiveCosmeticsUpdated(handleActiveCosmeticsUpdated);
+    firebaseService.onAllCosmeticsLoaded(handleAllCosmeticsLoaded);
+    firebaseService.onMaxBalanceUpdated(updateMaxBalanceDisplay); // Nouveau : appel de la fonction de mise à jour du solde max
+    firebaseService.onJackpotWinsUpdated(updateJackpotWinsDisplay); // Nouveau : appel de la fonction de mise à jour des jackpots remportés
+
+    setupPlayerSearchListeners(); // Configure les écouteurs pour la recherche de joueurs
+    setupModalListeners(); // Configure les écouteurs pour la modale
 });
 
 /**
- * Handles changes in the Firebase authentication state.
- * @param {firebase.User|null} user - The Firebase user object or null if logged out.
+ * Gère les changements d'état d'authentification Firebase.
+ * @param {firebase.User|null} user - L'objet utilisateur Firebase ou null si déconnecté.
  */
 async function handleAuthStateChange(user) {
     const authContainer = document.getElementById('auth-container');
     const gameContainer = document.getElementById('game-container');
 
     if (user) {
-        // User logged in
-        console.log("GameLogic: User logged in, showing game menu.");
+        // Utilisateur connecté
+        console.log("GameLogic: Utilisateur connecté, affichage du menu de jeu.");
         authContainer.style.display = 'none';
         gameContainer.style.display = 'block';
-        displayGameSelectionMenu(); // Show the main menu
-        // All data (balance, jackpot, leaderboard, reward, cosmetics) will be loaded by firebaseService
-        // and its callbacks will update the UI accordingly.
-        startJackpotIncrement(); // Start the jackpot increment ticker
-        startRewardCountdown(); // Start the reward countdown
+        displayGameSelectionMenu(); // Affiche le menu principal
+        startJackpotIncrement(); // Démarre le compteur d'incrémentation du jackpot
+        startRewardCountdown(); // Démarre le compte à rebours de la récompense
     } else {
-        // User logged out
-        console.log("GameLogic: User logged out, showing auth screen.");
+        // Utilisateur déconnecté
+        console.log("GameLogic: Utilisateur déconnecté, affichage de l'écran d'authentification.");
         authContainer.style.display = 'flex';
         gameContainer.style.display = 'none';
 
-        // Reset auth forms
+        // Réinitialise les formulaires d'authentification
         document.getElementById('login-form').style.display = 'none';
         document.getElementById('register-form').style.display = 'none';
         document.getElementById('initial-auth-options').style.display = 'flex';
@@ -71,66 +74,60 @@ async function handleAuthStateChange(user) {
             authMessage.classList.remove('win-text', 'loss-text');
         }
 
-        stopJackpotIncrement(); // Stop the jackpot increment ticker
-        stopRewardCountdown(); // Stop reward countdown
-        updateProgressiveJackpotDisplay(0); // Reset jackpot display
-        // Hide leaderboard if it was visible
+        stopJackpotIncrement();
+        stopRewardCountdown();
+        updateProgressiveJackpotDisplay(0);
         const leaderboardContainer = document.getElementById('leaderboard-container');
         if (leaderboardContainer) {
-            leaderboardContainer.style.display = 'none'; 
+            leaderboardContainer.style.display = 'none';
         }
-        // Remove any active cosmetic classes from the body
         applyActiveCosmetics({});
     }
 }
 
 /**
- * Handles user data loaded from Firebase Service.
- * @param {number} balance - The loaded user balance.
+ * Gère les données utilisateur chargées depuis Firebase Service.
+ * @param {number} balance - Le solde utilisateur chargé.
  */
 function handleUserDataLoaded(balance) {
-    console.log("GameLogic: User data loaded, updating balance display:", balance);
+    console.log("GameLogic: Données utilisateur chargées, mise à jour de l'affichage du solde :", balance);
     updateBalanceDisplay(balance);
+    updateMaxBalanceDisplay(firebaseService.getUserMaxBalance());
+    updateJackpotWinsDisplay(firebaseService.getUserJackpotWins());
 }
 
 /**
- * Handles reward data loaded from Firebase Service.
- * @param {number} timestamp - The last reward timestamp.
+ * Gère les données de récompense chargées depuis Firebase Service.
+ * @param {number} timestamp - L'horodatage de la dernière récompense.
  */
 function handleRewardDataLoaded(timestamp) {
-    console.log("GameLogic: Reward data loaded, starting countdown.");
-    startRewardCountdown(); // Start or update the countdown based on new timestamp
+    console.log("GameLogic: Données de récompense chargées, démarrage du compte à rebours.");
+    startRewardCountdown();
 }
 
 /**
- * Handles user cosmetics data loaded or updated from Firebase Service.
- * @param {Array<string>} cosmetics - The array of cosmetic IDs owned by the user.
+ * Gère les données de cosmétiques utilisateur chargées ou mises à jour depuis Firebase Service.
+ * @param {Array<string>} cosmetics - Le tableau des identifiants de cosmétiques possédés par l'utilisateur.
  */
 function handleUserCosmeticsUpdated(cosmetics) {
-    console.log("GameLogic: User owned cosmetics updated:", cosmetics);
-    // If shop is open, re-render it to reflect new ownership
+    console.log("GameLogic: Cosmétiques utilisateur mis à jour :", cosmetics);
     if (currentGame === 'shop') {
-        console.log("GameLogic: Shop is active, re-rendering shop after user cosmetics update.");
-        // We ensure that _allCosmetics in shop.js is up-to-date
-        // The initShop function will fetch active and owned cosmetics from firebaseService directly.
+        console.log("GameLogic: La boutique est active, réaffichage de la boutique après la mise à jour des cosmétiques utilisateur.");
         initShop(updateBalanceDisplay, showFloatingWinNumbers, currencyFormatter, firebaseService.getAllAvailableCosmetics());
     }
 }
 
 /**
- * Handles active cosmetics data loaded or updated from Firebase Service.
- * @param {Object} activeCosmetics - The object of currently active cosmetics.
+ * Gère les données de cosmétiques actifs chargées ou mises à jour depuis Firebase Service.
+ * @param {Object} activeCosmetics - L'objet des cosmétiques actuellement actifs.
  */
 function handleActiveCosmeticsUpdated(activeCosmetics) {
-    console.log("GameLogic: Active cosmetics updated:", activeCosmetics);
+    console.log("GameLogic: Cosmétiques actifs mis à jour :", activeCosmetics);
     applyActiveCosmetics(activeCosmetics);
-    // If shop is open, re-render it to reflect new active state
     if (currentGame === 'shop') {
-        console.log("GameLogic: Shop is active, re-rendering shop after active cosmetics update.");
+        console.log("GameLogic: La boutique est active, réaffichage de la boutique après la mise à jour des cosmétiques actifs.");
         initShop(updateBalanceDisplay, showFloatingWinNumbers, currencyFormatter, firebaseService.getAllAvailableCosmetics());
     } else if (currentGame === 'slot') {
-        // Also update slot machine visuals if we are currently in the slot game
-        // Pass the activeCosmetics object directly to updateSlotCosmeticVisuals
         if (typeof updateSlotCosmeticVisuals === 'function') {
             updateSlotCosmeticVisuals(activeCosmetics);
         }
@@ -138,23 +135,22 @@ function handleActiveCosmeticsUpdated(activeCosmetics) {
 }
 
 /**
- * Handles all available cosmetics data loaded from Firebase Service.
- * This is the primary entry point for displaying shop items.
- * @param {Array<Object>} allCosmetics - The array of all available cosmetic objects.
+ * Gère toutes les données de cosmétiques disponibles chargées depuis Firebase Service.
+ * C'est le point d'entrée principal pour l'affichage des articles de la boutique.
+ * @param {Array<Object>} allCosmetics - Le tableau de tous les objets cosmétiques disponibles.
  */
 function handleAllCosmeticsLoaded(allCosmetics) {
-    console.log("GameLogic: All available cosmetics loaded:", allCosmetics);
-    // If shop is currently the active game, initialize it with the loaded data
+    console.log("GameLogic: Tous les cosmétiques disponibles chargés :", allCosmetics);
     if (currentGame === 'shop') {
-        console.log("GameLogic: Shop is current game, initializing shop with all available cosmetics.");
+        console.log("GameLogic: Le jeu actuel est la boutique, initialisation de la boutique avec tous les cosmétiques disponibles.");
         initShop(updateBalanceDisplay, showFloatingWinNumbers, currencyFormatter, allCosmetics);
     }
 }
 
-// --- Authentication UI Logic ---
+// --- Logique de l'interface utilisateur d'authentification ---
 
 /**
- * Sets up listeners for authentication related buttons.
+ * Configure les écouteurs pour les boutons liés à l'authentification.
  */
 function setupAuthUIListeners() {
     document.getElementById('show-login-form').addEventListener('click', () => showAuthForm('login'));
@@ -167,8 +163,8 @@ function setupAuthUIListeners() {
 }
 
 /**
- * Displays the specified authentication form.
- * @param {string} formType - 'login' or 'register'.
+ * Affiche le formulaire d'authentification spécifié.
+ * @param {string} formType - 'login' ou 'register'.
  */
 function showAuthForm(formType) {
     document.getElementById('initial-auth-options').style.display = 'none';
@@ -187,7 +183,7 @@ function showAuthForm(formType) {
 }
 
 /**
- * Shows the initial authentication options (Login/Register buttons).
+ * Affiche les options d'authentification initiales (boutons de connexion/inscription).
  */
 function showInitialAuthOptions() {
     document.getElementById('login-form').style.display = 'none';
@@ -198,7 +194,7 @@ function showInitialAuthOptions() {
 }
 
 /**
- * Handles user login attempt.
+ * Gère la tentative de connexion de l'utilisateur.
  */
 async function handleLogin() {
     const email = document.getElementById('email-input').value;
@@ -217,7 +213,6 @@ async function handleLogin() {
         authMessage.textContent = "Connexion réussie !";
         authMessage.classList.add('win-text');
         authMessage.classList.remove('loss-text');
-        // UI will transition via handleAuthStateChange callback
     } else {
         let errorMessage = "Erreur de connexion.";
         if (result.error.code === 'auth/user-not-found' || result.error.code === 'auth/wrong-password') {
@@ -236,7 +231,7 @@ async function handleLogin() {
 }
 
 /**
- * Handles new user registration attempt.
+ * Gère la tentative d'inscription d'un nouvel utilisateur.
  */
 async function handleRegister() {
     const username = document.getElementById('username-input').value;
@@ -262,7 +257,7 @@ async function handleRegister() {
         authMessage.textContent = "Compte créé avec succès ! Vous pouvez maintenant vous connecter.";
         authMessage.classList.add('win-text');
         authMessage.classList.remove('loss-text');
-        showAuthForm('login'); // Show login form after successful registration
+        showAuthForm('login');
     } else {
         let errorMessage = "Erreur lors de la création du compte.";
         if (result.error.code === 'auth/email-already-in-use') {
@@ -281,7 +276,7 @@ async function handleRegister() {
 }
 
 /**
- * Handles password reset request.
+ * Gère la demande de réinitialisation de mot de passe.
  */
 async function handleForgotPassword() {
     const emailInput = document.getElementById('email-input');
@@ -316,18 +311,17 @@ async function handleForgotPassword() {
 }
 
 /**
- * Handles user logout.
+ * Gère la déconnexion de l'utilisateur.
  */
 async function logout() {
     await firebaseService.logoutUser();
-    // UI will be updated by handleAuthStateChange callback
 }
 
-// --- Game Menu & Navigation Logic ---
+// --- Logique du menu de jeu et de navigation ---
 
 /**
- * Displays the main game selection menu.
- * This function rebuilds the HTML for the game container.
+ * Affiche le menu de sélection du jeu principal.
+ * Cette fonction reconstruit le HTML pour le conteneur du jeu.
  */
 function displayGameSelectionMenu() {
     const gameContainer = document.getElementById('game-container');
@@ -335,6 +329,9 @@ function displayGameSelectionMenu() {
         <div class="main-menu">
             <h1>BIENVENUE AU JEWBUZZ CASINO !</h1>
             <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
+            <p>Solde le plus haut : <span id="current-max-balance">${currencyFormatter.format(firebaseService.getUserMaxBalance())}</span> €</p>
+            <p>Jackpots remportés : <span id="current-jackpot-wins">${firebaseService.getUserJackpotWins()}</span></p>
+
             <!-- Jackpot here -->
             <div id="progressive-jackpot-container">
                 <p>JACKPOT : <span id="progressive-jackpot-display">${currencyFormatter.format(firebaseService.getProgressiveJackpot())}</span> €</p>
@@ -344,20 +341,26 @@ function displayGameSelectionMenu() {
                 <button class="game-button" onclick="startSlotMachine()">Machines à Sous</button>
                 <button class="game-button" onclick="startBlackjack()">Blackjack</button>
                 <button class="game-button" onclick="startChickenGame()">Jeu du Poulet</button>
-                <button class="game-button" onclick="startShop()">Boutique</button> <!-- New: Shop button -->
-                <!-- Free Reward Button -->
+                <button class="game-button" onclick="startShop()">Boutique</button>
                 <button id="free-reward-button" class="game-button free-reward-button">Récompense Gratuite</button>
             </div>
             <div id="free-reward-countdown" class="free-reward-countdown"></div>
         </div>
 
-        <!-- Leaderboard container needs to be present in the main menu view -->
+        <!-- Conteneur de recherche de joueur -->
+        <div id="player-search-container">
+            <input type="text" id="player-search-input" placeholder="Rechercher un joueur...">
+            <button id="player-search-button" class="game-button">Rechercher</button>
+            <div id="player-search-results"></div>
+        </div>
+
+        <!-- Conteneur du classement -->
         <div id="leaderboard-container">
-            <h2>🏆 Leaderboard 🏆</h2>
+            <h2>🏆 Classement 🏆</h2>
             <ol id="leaderboard-list"></ol>
         </div>
         <button id="logout-button" class="game-button logout-button">Se déconnecter</button>
-        <!-- Game specific containers, initially hidden -->
+        <!-- Conteneurs spécifiques au jeu, initialement cachés -->
         <div id="slot-machine-container" style="display:none;"></div>
         <div id="blackjack-container" style="display:none;"></div>
         <div id="chicken-game-container" style="display:none;"></div>
@@ -365,45 +368,47 @@ function displayGameSelectionMenu() {
 
         <button id="back-to-menu" class="game-button" style="display:none; margin-top: 20px;" onclick="showMainMenu()">Retour au Menu</button>
     `;
-    setupGameMenuListeners(); // Re-attach listeners after HTML recreation
-    updateBalanceDisplay(firebaseService.getUserBalance()); // Ensure balance is updated
-    updateProgressiveJackpotDisplay(firebaseService.getProgressiveJackpot()); // Ensure jackpot display is correct
-    firebaseService.loadLeaderboard(); // Explicitly load leaderboard data
-    console.log("GameLogic: HTML for main menu re-rendered. Jackpot display element (after render):", document.getElementById('progressive-jackpot-display'));
-    // Leaderboard and reward countdown will be updated by their respective callbacks.
+    setupGameMenuListeners(); // Ré-attache les écouteurs après la recréation du HTML
+    setupPlayerSearchListeners(); // Ré-attache les écouteurs de recherche
+    updateBalanceDisplay(firebaseService.getUserBalance());
+    updateMaxBalanceDisplay(firebaseService.getUserMaxBalance());
+    updateJackpotWinsDisplay(firebaseService.getUserJackpotWins());
+    updateProgressiveJackpotDisplay(firebaseService.getUserProgressiveJackpot());
+    firebaseService.loadLeaderboard();
+    console.log("GameLogic: HTML pour le menu principal ré-affiché. Élément d'affichage du jackpot (après rendu) :", document.getElementById('progressive-jackpot-display'));
 }
 
 /**
- * Shows the main menu and hides game-specific containers.
+ * Affiche le menu principal et masque les conteneurs spécifiques au jeu.
  */
 function showMainMenu() {
-    // Hide all game containers explicitly
     document.getElementById('slot-machine-container').style.display = 'none';
     document.getElementById('blackjack-container').style.display = 'none';
     document.getElementById('chicken-game-container').style.display = 'none';
     document.getElementById('shop-container').style.display = 'none';
 
-    // Show main menu elements
     document.querySelector('.main-menu').style.display = 'block';
     document.getElementById('progressive-jackpot-container').style.display = 'block';
     document.getElementById('leaderboard-container').style.display = 'block';
+    document.getElementById('player-search-container').style.display = 'flex'; // Afficher le conteneur de recherche
     document.getElementById('logout-button').style.display = 'block';
     document.getElementById('free-reward-button').style.display = 'block';
     document.getElementById('free-reward-countdown').style.display = 'block';
-    document.getElementById('back-to-menu').style.display = 'none'; // Hide general back button
+    document.getElementById('back-to-menu').style.display = 'none';
 
-    updateBalanceDisplay(firebaseService.getUserBalance()); // Ensure balance is updated on return to main menu
+    updateBalanceDisplay(firebaseService.getUserBalance());
+    updateMaxBalanceDisplay(firebaseService.getUserMaxBalance());
+    updateJackpotWinsDisplay(firebaseService.getUserJackpotWins());
     updateProgressiveJackpotDisplay(firebaseService.getProgressiveJackpot());
-    startRewardCountdown(); // Re-start countdown
-    firebaseService.loadLeaderboard(); // Explicitly load leaderboard data
+    startRewardCountdown();
+    firebaseService.loadLeaderboard();
     
-    // Clear any game-specific 'current-game'
     currentGame = null; 
 }
 
 
 /**
- * Sets up listeners for game menu buttons.
+ * Configure les écouteurs pour les boutons du menu de jeu.
  */
 function setupGameMenuListeners() {
     const logoutButton = document.getElementById('logout-button');
@@ -416,7 +421,6 @@ function setupGameMenuListeners() {
         backToMenuButton.addEventListener('click', showMainMenu);
     }
 
-    // Attach listeners for game selection buttons
     const gameButtonsContainer = document.querySelector('.main-menu .game-buttons');
     if (gameButtonsContainer) {
         gameButtonsContainer.addEventListener('click', (event) => {
@@ -427,7 +431,7 @@ function setupGameMenuListeners() {
                     startBlackjack();
                 } else if (event.target.textContent.includes('Jeu du Poulet')) {
                     startChickenGame();
-                } else if (event.target.textContent.includes('Boutique')) { // New: Shop button handler
+                } else if (event.target.textContent.includes('Boutique')) {
                     startShop();
                 } else if (event.target.id === 'free-reward-button') {
                     collectFreeReward();
@@ -438,27 +442,27 @@ function setupGameMenuListeners() {
 }
 
 /**
- * Hides all game-specific containers and the main menu elements that are not universally present.
- * Ensures only the active game container is visible.
+ * Masque tous les conteneurs spécifiques au jeu et les éléments du menu principal qui ne sont pas universellement présents.
+ * Assure que seul le conteneur de jeu actif est visible.
  */
 function hideAllGameContainersAndMenu() {
-    // Hide main menu elements
     const mainMenu = document.querySelector('.main-menu');
     if (mainMenu) mainMenu.style.display = 'none';
     
     const logoutButton = document.getElementById('logout-button');
-    if (logoutButton) logoutButton.style.display = 'none'; // Hide logout button in game view
+    if (logoutButton) logoutButton.style.display = 'none';
 
     const jackpotContainer = document.getElementById('progressive-jackpot-container');
     if (jackpotContainer) jackpotContainer.style.display = 'none';
     const leaderboardContainer = document.getElementById('leaderboard-container');
     if (leaderboardContainer) leaderboardContainer.style.display = 'none';
+    const playerSearchContainer = document.getElementById('player-search-container'); // Masquer le conteneur de recherche
+    if (playerSearchContainer) playerSearchContainer.style.display = 'none';
     const freeRewardButton = document.getElementById('free-reward-button');
     if (freeRewardButton) freeRewardButton.style.display = 'none';
     const freeRewardCountdown = document.getElementById('free-reward-countdown');
     if (freeRewardCountdown) freeRewardCountdown.style.display = 'none';
     
-    // Hide all specific game containers
     const slotContainer = document.getElementById('slot-machine-container');
     if (slotContainer) slotContainer.style.display = 'none';
     const blackjackContainer = document.getElementById('blackjack-container');
@@ -468,23 +472,21 @@ function hideAllGameContainersAndMenu() {
     const shopContainer = document.getElementById('shop-container'); 
     if (shopContainer) shopContainer.style.display = 'none';
 
-    stopRewardCountdown(); // Stop countdown when navigating away from main menu
+    stopRewardCountdown();
 }
 
 
-// Functions to start specific games (these would typically trigger game-specific logic)
+// Fonctions pour démarrer des jeux spécifiques (ceux-ci déclencheraient généralement une logique spécifique au jeu)
 function startSlotMachine() {
     currentGame = 'slot';
-    hideAllGameContainersAndMenu(); // Hide main menu elements and other games
+    hideAllGameContainersAndMenu();
     
     const slotContainer = document.getElementById('slot-machine-container');
-    // Load HTML only if it's not already loaded
     if (!slotContainer.innerHTML.trim()) {
         slotContainer.innerHTML = `
             <h2>✦ MACHINE À SOUS ✦</h2>
             <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
             <div id="slots-grid">
-                <!-- Slots HTML will be generated here by slotMachine.js -->
             </div>
             <p id="gain-text">Gain : 0 €</p>
             <p>Tours Gratuits : <span id="free-spins-display">0</span></p>
@@ -492,7 +494,6 @@ function startSlotMachine() {
             <div class="bet-controls">
                 <label for="bet-select">Mise :</label>
                 <select id="bet-select">
-                    <!-- Options will be populated by slotMachine.js -->
                 </select>
             </div>
             <br/>
@@ -500,20 +501,17 @@ function startSlotMachine() {
             <button id="auto-spin-button" class="game-button">Auto Spin</button>
             <div id="auto-spin-remaining-display" style="font-size: 0.8em; margin-top: 5px; color: #ccc;"></div>
             <button id="back-to-menu-slot" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
-             <!-- Removed symbol stats display from here, now only in slotMachine.js init -->
         `;
-        // Now call the actual game initialization, which also attaches listeners
         initSlotMachine(); 
-        // Attach back to menu button listener
         document.getElementById('back-to-menu-slot').addEventListener('click', showMainMenu);
     }
-    slotContainer.style.display = 'block'; // Show the slot machine container
-    updateBalanceDisplay(firebaseService.getUserBalance()); // Ensure balance is updated
+    slotContainer.style.display = 'block';
+    updateBalanceDisplay(firebaseService.getUserBalance());
 }
 
 function startBlackjack() {
     currentGame = 'blackjack';
-    hideAllGameContainersAndMenu(); // Hide main menu elements and other games
+    hideAllGameContainersAndMenu();
 
     const blackjackContainer = document.getElementById('blackjack-container');
     if (!blackjackContainer.innerHTML.trim()) {
@@ -536,7 +534,7 @@ function startBlackjack() {
                         <input type="number" id="blackjack-bet-amount" value="10" min="1" step="1">
                     </div>
                     <div class="blackjack-actions">
-                        <button id="blackjack-deal-button" class="game-button">Distribuer</button>
+                        <button id="blackjack-deal-button" class="game-button" disabled>Distribuer</button>
                         <button id="blackjack-hit-button" class="game-button" disabled>Tirer</button>
                         <button id="blackjack-stand-button" class="game-button" disabled>Rester</button>
                         <button id="blackjack-double-button" class="game-button" disabled>Doubler</button>
@@ -566,7 +564,6 @@ function startChickenGame() {
                     <div class="bet-controls">
                         <label for="chicken-bet-select">Mise : </label>
                         <select id="chicken-bet-select">
-                            <!-- Options will be populated by chicken.js -->
                         </select>
                     </div>
                     <div>
@@ -598,7 +595,7 @@ function startChickenGame() {
 
 
 /**
- * Starts the shop interface.
+ * Démarre l'interface de la boutique.
  */
 function startShop() {
     currentGame = 'shop';
@@ -611,30 +608,24 @@ function startShop() {
             <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
             <div id="shop-message" class="shop-message"></div>
             <div id="cosmetic-grid" class="cosmetic-grid">
-                <!-- Cosmetic items will be loaded here by shop.js -->
                 <p>Chargement des articles de la boutique...</p>
             </div>
             <button id="back-to-menu-shop" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
         `;
-        // Initialize shop after the HTML is rendered.
-        // The handleAllCosmeticsLoaded callback will be triggered by firebaseService
-        // and will then call initShop with the actual data.
         initShop(updateBalanceDisplay, showFloatingWinNumbers, currencyFormatter, firebaseService.getAllAvailableCosmetics()); 
         document.getElementById('back-to-menu-shop').addEventListener('click', showMainMenu);
     }
-    shopContainer.style.display = 'flex'; // Ensure shop container is visible
+    shopContainer.style.display = 'flex';
     updateBalanceDisplay(firebaseService.getUserBalance());
 }
 
-// --- Balance and Jackpot UI Update Functions ---
+// --- Fonctions de mise à jour de l'interface utilisateur du solde et du jackpot ---
 
 /**
- * Updates the displayed user balance.
- * @param {number} newBalance - The new balance to display.
+ * Met à jour le solde utilisateur affiché.
+ * @param {number} newBalance - Le nouveau solde à afficher.
  */
 function updateBalanceDisplay(newBalance) {
-    // Use firebaseService.getUserBalance() if newBalance is not explicitly passed,
-    // ensuring we always get the most up-to-date balance.
     const balanceToDisplay = newBalance !== undefined ? newBalance : firebaseService.getUserBalance();
     const balanceElements = document.querySelectorAll('#current-balance');
     balanceElements.forEach(element => {
@@ -643,53 +634,73 @@ function updateBalanceDisplay(newBalance) {
 }
 
 /**
- * Updates the displayed progressive jackpot.
- * @param {number} newJackpot - The new jackpot amount to display.
+ * Met à jour le solde le plus élevé affiché.
+ * @param {number} newMaxBalance - Le nouveau solde le plus élevé à afficher.
+ */
+function updateMaxBalanceDisplay(newMaxBalance) {
+    const maxBalanceToDisplay = newMaxBalance !== undefined ? newMaxBalance : firebaseService.getUserMaxBalance();
+    const maxBalanceElement = document.getElementById('current-max-balance');
+    if (maxBalanceElement) {
+        maxBalanceElement.textContent = currencyFormatter.format(maxBalanceToDisplay);
+    }
+}
+
+/**
+ * Met à jour le nombre de jackpots remportés affiché.
+ * @param {number} newJackpotWins - Le nouveau nombre de jackpots remportés à afficher.
+ */
+function updateJackpotWinsDisplay(newJackpotWins) {
+    const jackpotWinsToDisplay = newJackpotWins !== undefined ? newJackpotWins : firebaseService.getUserJackpotWins();
+    const jackpotWinsElement = document.getElementById('current-jackpot-wins');
+    if (jackpotWinsElement) {
+        jackpotWinsElement.textContent = jackpotWinsToDisplay;
+    }
+}
+
+/**
+ * Met à jour le jackpot progressif affiché.
+ * @param {number} newJackpot - Le nouveau montant du jackpot à afficher.
  */
 function updateProgressiveJackpotDisplay(newJackpot) {
     const jackpotDisplayElement = document.getElementById('progressive-jackpot-display');
     const jackpotContainer = document.getElementById('progressive-jackpot-container');
     
-    console.log("GameLogic: Updating jackpot display. New jackpot:", newJackpot, "Element found:", !!jackpotDisplayElement);
+    console.log("GameLogic: Mise à jour de l'affichage du jackpot. Nouveau jackpot :", newJackpot, "Élément trouvé :", !!jackpotDisplayElement);
 
     if (jackpotDisplayElement) {
         jackpotDisplayElement.textContent = currencyFormatter.format(newJackpot);
     } else {
-        console.warn("GameLogic: Jackpot display element not found (progressive-jackpot-display). This is expected if not in main menu or game views where it's displayed).");
+        console.warn("GameLogic: Élément d'affichage du jackpot non trouvé (progressive-jackpot-display). Ceci est normal si vous n'êtes pas dans le menu principal ou les vues de jeu où il est affiché.");
     }
 
-    // Only show jackpot container if user is logged in AND it's the main menu
     const isMainMenu = document.querySelector('.main-menu') && document.querySelector('.main-menu').style.display !== 'none';
     if (jackpotContainer) {
         jackpotContainer.style.display = (firebaseService.getCurrentUserId() && isMainMenu) ? 'flex' : 'none';
-        console.log("GameLogic: Jackpot container display style set to:", jackpotContainer.style.display);
+        console.log("GameLogic: Style d'affichage du conteneur de jackpot défini sur :", jackpotContainer.style.display);
     } else {
-        console.warn("GameLogic: Jackpot container element not found (progressive-jackpot-container). This is expected if not in main menu or game views where it's displayed).");
+        console.warn("GameLogic: Élément conteneur du jackpot non trouvé (progressive-jackpot-container). Ceci est normal si vous n'êtes pas dans le menu principal ou les vues de jeu où il est affiché).");
     }
 }
 
 /**
- * Starts the interval for incrementing the progressive jackpot.
+ * Démarre l'intervalle pour l'incrémentation du jackpot progressif.
  */
 function startJackpotIncrement() {
     if (progressiveJackpotInterval) {
         clearInterval(progressiveJackpotInterval);
     }
-    // Increment every second and save every 10 seconds (or more frequently if desired)
     progressiveJackpotInterval = setInterval(async () => {
-        // Access constants and functions via the global firebaseService object
         const incrementAmount = firebaseService.getRewardConstants().JACKPOT_INCREMENT_PER_SECOND || 2;
         firebaseService.incrementProgressiveJackpot(incrementAmount);
         updateProgressiveJackpotDisplay(firebaseService.getProgressiveJackpot());
-        // Periodically save the jackpot to Firestore (e.g., every 10 seconds)
-        if (Date.now() % 10000 < 1000) { // Save approximately every 10 seconds
-            await firebaseService.saveProgressiveJackpot(firebaseService.getProgressiveJackpot()); // Pass the current jackpot value
+        if (Date.now() % 10000 < 1000) {
+            await firebaseService.saveProgressiveJackpot(firebaseService.getProgressiveJackpot());
         }
-    }, 1000); // Update every 1 second
+    }, 1000);
 }
 
 /**
- * Stops the jackpot increment interval.
+ * Arrête l'intervalle d'incrémentation du jackpot.
  */
 function stopJackpotIncrement() {
     if (progressiveJackpotInterval) {
@@ -698,34 +709,32 @@ function stopJackpotIncrement() {
     }
 }
 
-// --- Leaderboard UI Update Functions ---
+// --- Fonctions de mise à jour de l'interface utilisateur du classement ---
 
 /**
- * Updates the displayed leaderboard.
- * @param {Array<Object>} leaderboardData - An array of user objects ({username, balance}).
+ * Met à jour le classement affiché.
+ * @param {Array<Object>} leaderboardData - Un tableau d'objets utilisateur ({username, balance}).
  */
 function updateLeaderboardDisplay(leaderboardData) {
-    console.log("GameLogic: updateLeaderboardDisplay called with data:", leaderboardData);
+    console.log("GameLogic: updateLeaderboardDisplay appelé avec les données :", leaderboardData);
     const leaderboardList = document.getElementById('leaderboard-list');
     const leaderboardContainer = document.getElementById('leaderboard-container');
 
-    // Only display the leaderboard if a user is logged in and we are in the main menu
     const isMainMenu = document.querySelector('.main-menu') && document.querySelector('.main-menu').style.display !== 'none';
     if (!firebaseService.getCurrentUserId() || !isMainMenu) {
-        console.log("GameLogic: Leaderboard not displayed (user not logged in or not in main menu).");
+        console.log("GameLogic: Classement non affiché (utilisateur non connecté ou pas dans le menu principal).");
         if (leaderboardContainer) leaderboardContainer.style.display = 'none';
         return;
     } else {
-        console.log("GameLogic: Displaying leaderboard as user is logged in and in main menu.");
+        console.log("GameLogic: Affichage du classement car l'utilisateur est connecté et dans le menu principal.");
         if (leaderboardContainer) leaderboardContainer.style.display = 'flex';
     }
 
     if (leaderboardList) {
-        leaderboardList.innerHTML = ''; // Clear current leaderboard
+        leaderboardList.innerHTML = '';
 
-        // Sort the data by balance in descending order as per instructions
         const sortedLeaderboardData = [...leaderboardData].sort((a, b) => b.balance - a.balance);
-        console.log("GameLogic: Sorted Leaderboard Data:", sortedLeaderboardData);
+        console.log("GameLogic: Données du classement triées :", sortedLeaderboardData);
 
         if (sortedLeaderboardData.length === 0) {
             leaderboardList.innerHTML = `
@@ -735,43 +744,54 @@ function updateLeaderboardDisplay(leaderboardData) {
                     et qu'il y a des utilisateurs avec un solde.
                 </li>
             `;
-            console.log("GameLogic: Leaderboard empty message displayed.");
+            console.log("GameLogic: Message de classement vide affiché.");
             return;
         }
 
         sortedLeaderboardData.forEach((userData, index) => {
             const listItem = document.createElement('li');
+            const usernameSpan = document.createElement('span'); // Create span for username
+            usernameSpan.classList.add('leaderboard-username');
+            usernameSpan.dataset.userId = userData.userId;
+            usernameSpan.style.cursor = 'pointer';
+            usernameSpan.style.textDecoration = 'underline';
+            usernameSpan.textContent = userData.username;
+
+            usernameSpan.addEventListener('click', async () => {
+                await showPlayerDetails(userData.userId);
+            });
+
             listItem.innerHTML = `
                 <span class="leaderboard-rank">${index + 1}.</span>
-                <span class="leaderboard-username">${userData.username}</span>
                 <span class="leaderboard-balance">${currencyFormatter.format(userData.balance)} €</span>
             `;
+            listItem.insertBefore(usernameSpan, listItem.children[1]); // Insert username span before balance span
             leaderboardList.appendChild(listItem);
         });
-        console.log("GameLogic: Leaderboard UI updated with sorted data.");
+        console.log("GameLogic: Interface utilisateur du classement mise à jour avec les données triées.");
     } else {
-        console.warn("GameLogic: Leaderboard list element not found.");
+        console.warn("GameLogic: Élément de la liste du classement non trouvé.");
     }
 }
 
-// --- Floating Win Numbers Animation ---
+// --- Animation des nombres flottants de gain ---
 
 /**
- * Displays animated floating numbers for win/loss amounts.
- * @param {number} amount - The amount to display (positive for win, negative for loss).
- * @param {HTMLElement} parentElement - The parent element to attach the floating numbers to.
+ * Affiche des nombres flottants animés pour les montants de gain/perte.
+ * @param {number} amount - Le montant à afficher (positif pour gain, négatif pour perte).
+ * @param {HTMLElement} parentElement - L'élément parent auquel attacher les nombres flottants.
  */
 function showFloatingWinNumbers(amount, parentElement) {
     if (!parentElement) {
-        console.error(`showFloatingWinNumbers: parentElement is null or undefined.`);
+        console.error(`showFloatingWinNumbers: parentElement est null ou indéfini.`);
         return;
     }
 
     const isWin = amount >= 0;
     const displayAmount = isWin ? `+${currencyFormatter.format(amount)}€` : `${currencyFormatter.format(amount)}€`;
-    const color = isWin ? 'hsl(150, 100%, 70%)' : 'hsl(0, 100%, 70%)'; // Green for win, Red for loss
+    const color = isWin ? 'hsl(150, 100%, 70%)' : 'hsl(0, 100%, 70%)';
 
-    const numberOfSpans = Math.min(10, Math.ceil(Math.abs(amount) / (isWin ? 15 : 50))); // More for wins, fewer for losses
+    const numberOfSpans = Math.min(10, Math.ceil(Math.abs(amount) / (isWin ? 15 : 50)));
 
     let floatingContainer = parentElement.querySelector('.floating-win-number-container');
     if (!floatingContainer) {
@@ -779,7 +799,7 @@ function showFloatingWinNumbers(amount, parentElement) {
         floatingContainer.classList.add('floating-win-number-container');
         parentElement.appendChild(floatingContainer);
     } else {
-        floatingContainer.innerHTML = ''; // Clear previous numbers
+        floatingContainer.innerHTML = '';
     }
 
     const parentRect = parentElement.getBoundingClientRect();
@@ -800,7 +820,7 @@ function showFloatingWinNumbers(amount, parentElement) {
         const endOffsetX = (Math.random() - 0.5) * (parentRect.width * 1.8);
         const endOffsetY = (Math.random() - 0.5) * (parentRect.height * 1.8);
 
-        numberSpan.textContent = displayAmount; // Display the full amount on each span
+        numberSpan.textContent = displayAmount;
 
         numberSpan.style.setProperty('--start-x', `${startX}px`);
         numberSpan.style.setProperty('--start-y', `${startY}px`);
@@ -820,13 +840,13 @@ function showFloatingWinNumbers(amount, parentElement) {
     }, 4000);
 }
 
-// --- Free Reward Functions ---
+// --- Fonctions de récompense gratuite ---
 
 /**
- * Starts or updates the countdown for the free reward button.
+ * Démarre ou met à jour le compte à rebours pour le bouton de récompense gratuite.
  */
 function startRewardCountdown() {
-    stopRewardCountdown(); // Clear any existing interval
+    stopRewardCountdown();
 
     const rewardButton = document.getElementById('free-reward-button');
     const countdownDisplay = document.getElementById('free-reward-countdown');
@@ -872,7 +892,7 @@ function startRewardCountdown() {
 }
 
 /**
- * Stops the reward countdown interval.
+ * Arrête l'intervalle du compte à rebours de la récompense.
  */
 function stopRewardCountdown() {
     if (rewardCountdownInterval) {
@@ -882,13 +902,12 @@ function stopRewardCountdown() {
 }
 
 /**
- * Initiates the collection of a free reward.
+ * Lance la collecte d'une récompense gratuite.
  */
 async function collectFreeReward() {
     const rewardAmount = await firebaseService.collectFreeRewardFromService();
 
     if (rewardAmount > 0) {
-        // Show floating numbers animation
         const gameContainer = document.getElementById('game-container');
         showFloatingWinNumbers(rewardAmount, gameContainer);
 
@@ -908,60 +927,226 @@ async function collectFreeReward() {
             if (countdownDisplay) {
                 countdownDisplay.classList.remove('win-text');
             }
-            startRewardCountdown(); // Restart countdown after showing message
+            startRewardCountdown();
         }, 2000);
     } else {
-        // If reward is 0, it means it's on cooldown
-        console.log("GameLogic: Reward not available yet.");
-        // The countdown will already be showing the correct time.
+        console.log("GameLogic: Récompense non disponible pour le moment.");
     }
 }
 
 /**
- * Applies active cosmetic classes to the body or relevant game elements.
- * @param {Object} activeCosmeticsObject - The object containing active cosmetic types and their values.
+ * Applique les classes de cosmétiques actifs au corps ou aux éléments de jeu pertinents.
+ * @param {Object} activeCosmeticsObject - L'objet contenant les types de cosmétiques actifs et leurs valeurs.
  */
 function applyActiveCosmetics(activeCosmeticsObject) {
-    // Clear all previously applied slot theme classes from the body
     document.body.className = document.body.className.split(' ').filter(c => !c.startsWith('slot-theme-')).join(' ');
-    // Clear all previously applied slot symbol classes from the body
     document.body.className = document.body.className.split(' ').filter(c => !c.startsWith('slot-symbols-')).join(' ');
-    // Clear all previously applied slot border classes from the body
     document.body.className = document.body.className.split(' ').filter(c => !c.startsWith('slot-border-')).join(' ');
-    // Clear all previously applied slot win effect classes from the body
     document.body.className = document.body.className.split(' ').filter(c => !c.startsWith('slot-win-effect-')).join(' ');
-    // Clear all previously applied slot spin effect classes from the body
     document.body.className = document.body.className.split(' ').filter(c => !c.startsWith('slot-spin-effect-')).join(' ');
 
 
     for (const type in activeCosmeticsObject) {
         const value = activeCosmeticsObject[type];
-        if (type === 'slot_theme') {
+        // Ensure that `value` is not an accumulated drop rate bonus for slot symbols,
+        // but rather the actual class name to be applied.
+        // For visual cosmetics, activeCosmeticsObject[type] will contain the class name (e.g., 'gold_theme_class').
+        // For drop rate modifiers, it contains the accumulated numerical bonus, which shouldn't be added as a class.
+        // We'll rely on the `allAvailableCosmetics` to determine if it's a visual effect.
+        const cosmeticDetails = firebaseService.getAllAvailableCosmetics().find(c => c.id === type || c.value === value);
+
+        if (cosmeticDetails && cosmeticDetails.type === 'slot_theme') {
             document.body.classList.add(`slot-theme-${value}`);
-        } else if (type === 'slot_symbols') {
+        } else if (cosmeticDetails && cosmeticDetails.type === 'slot_symbols') {
             document.body.classList.add(`slot-symbols-${value}`);
-        } else if (type === 'slot_border') {
+        } else if (cosmeticDetails && cosmeticDetails.type === 'slot_border') {
             document.body.classList.add(`slot-border-${value}`);
-        } else if (type === 'slot_win_effect') {
+        } else if (cosmeticDetails && cosmeticDetails.type === 'slot_win_effect') {
             document.body.classList.add(`slot-win-effect-${value}`);
-        } else if (type === 'slot_spin_effect') {
+        } else if (cosmeticDetails && cosmeticDetails.type === 'slot_spin_effect') {
             document.body.classList.add(`slot-spin-effect-${value}`);
         }
     }
-    console.log("GameLogic: Applied active cosmetics to body:", activeCosmeticsObject);
+    console.log("GameLogic: Cosmétiques actifs appliqués au corps :", activeCosmeticsObject);
 }
 
 
-// Expose functions that need to be called by game-specific scripts (slotMachine.js, etc.)
-// For instance, a game needs to call this when balance changes.
-// It's better to use events or direct function calls from the game's logic.
+// --- Fonctions de recherche de joueur et de pop-up ---
+
+/**
+ * Configure les écouteurs pour la recherche de joueurs.
+ */
+function setupPlayerSearchListeners() {
+    const searchInput = document.getElementById('player-search-input');
+    const searchButton = document.getElementById('player-search-button');
+    const searchResultsContainer = document.getElementById('player-search-results');
+    const modal = document.getElementById('player-details-modal');
+
+    if (searchButton) {
+        searchButton.addEventListener('click', handlePlayerSearch);
+    }
+    if (searchInput) {
+        // Trigger search on Enter key press
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handlePlayerSearch();
+            }
+        });
+        // Clear results when input is cleared
+        searchInput.addEventListener('input', () => {
+            if (searchInput.value.trim() === '') {
+                searchResultsContainer.innerHTML = '';
+            }
+        });
+    }
+    if (searchResultsContainer) {
+        searchResultsContainer.addEventListener('click', async (event) => {
+            const target = event.target;
+            if (target.classList.contains('player-search-item')) {
+                const userId = target.dataset.userId;
+                if (userId) {
+                    await showPlayerDetails(userId);
+                }
+            }
+        });
+    }
+}
+
+/**
+ * Gère la recherche de joueurs et affiche les résultats.
+ */
+async function handlePlayerSearch() {
+    const searchInput = document.getElementById('player-search-input');
+    const searchResultsContainer = document.getElementById('player-search-results');
+    const query = searchInput.value.trim();
+
+    searchResultsContainer.innerHTML = ''; // Effacer les résultats précédents
+
+    if (query.length < 3) { // Exiger au moins 3 caractères pour la recherche
+        searchResultsContainer.innerHTML = '<p class="loss-text" style="text-align: center;">Veuillez entrer au moins 3 caractères.</p>';
+        return;
+    }
+
+    try {
+        const users = await firebaseService.searchUsersByUsername(query);
+        if (users.length === 0) {
+            searchResultsContainer.innerHTML = '<p class="loss-text" style="text-align: center;">Aucun joueur trouvé.</p>';
+        } else {
+            users.forEach(user => {
+                const div = document.createElement('div');
+                div.classList.add('player-search-item');
+                div.dataset.userId = user.userId;
+                div.textContent = user.username;
+                searchResultsContainer.appendChild(div);
+            });
+        }
+    } catch (error) {
+        console.error("GameLogic: Erreur lors de la recherche de joueurs :", error);
+        searchResultsContainer.innerHTML = '<p class="loss-text" style="text-align: center;">Erreur lors de la recherche.</p>';
+    }
+}
+
+/**
+ * Affiche les détails d'un joueur dans une modale.
+ * @param {string} userId - L'ID de l'utilisateur dont les détails doivent être affichés.
+ */
+async function showPlayerDetails(userId) {
+    const modal = document.getElementById('player-details-modal');
+    const usernameElement = document.getElementById('modal-player-username');
+    const balanceElement = document.getElementById('modal-player-balance');
+    const maxBalanceElement = document.getElementById('modal-player-max-balance');
+    const jackpotWinsElement = document.getElementById('modal-player-jackpot-wins');
+    const generatedImagesSection = document.getElementById('modal-player-generated-images-section'); // Nouveau: section pour les images générées
+    const generatedImagesGrid = document.getElementById('modal-player-generated-images-grid'); // Nouveau: grille pour les images générées
+
+    // Effacer les contenus précédents
+    usernameElement.textContent = '';
+    balanceElement.textContent = 'Chargement...';
+    maxBalanceElement.textContent = 'Chargement...';
+    jackpotWinsElement.textContent = 'Chargement...';
+    if (generatedImagesGrid) generatedImagesGrid.innerHTML = 'Chargement...'; // Nouveau: effacer
+    if (generatedImagesSection) generatedImagesSection.style.display = 'none'; // Nouveau: masquer la section par défaut
+
+    modal.style.display = 'flex'; // Afficher la modale
+
+    try {
+        const playerDetails = await firebaseService.getUserDetails(userId);
+
+        if (playerDetails) {
+            usernameElement.textContent = playerDetails.username;
+            balanceElement.textContent = currencyFormatter.format(playerDetails.balance);
+            maxBalanceElement.textContent = currencyFormatter.format(playerDetails.maxBalance);
+            jackpotWinsElement.textContent = playerDetails.jackpotWins;
+
+            // Nouveau: Afficher les images générées par l'utilisateur
+            if (generatedImagesSection && generatedImagesGrid) {
+                generatedImagesGrid.innerHTML = ''; // Effacer les images précédentes
+                if (playerDetails.generatedImages && playerDetails.generatedImages.length > 0) {
+                    playerDetails.generatedImages.forEach(image => {
+                        const imgElement = document.createElement('img');
+                        imgElement.src = image.url;
+                        imgElement.alt = image.name;
+                        imgElement.classList.add('modal-trophy-image'); // Applique une classe pour le style
+                        generatedImagesGrid.appendChild(imgElement);
+                    });
+                    generatedImagesSection.style.display = 'block'; // Afficher la section si des images existent
+                } else {
+                    generatedImagesSection.style.display = 'none'; // Masquer la section si aucune image
+                }
+            }
+
+        } else {
+            usernameElement.textContent = 'Joueur non trouvé';
+            balanceElement.textContent = 'N/A';
+            maxBalanceElement.textContent = 'N/A';
+            jackpotWinsElement.textContent = 'N/A';
+            if (generatedImagesGrid) generatedImagesGrid.innerHTML = '';
+            if (generatedImagesSection) generatedImagesSection.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("GameLogic: Erreur lors de l'affichage des détails du joueur :", error);
+        usernameElement.textContent = 'Erreur';
+        balanceElement.textContent = 'N/A';
+        maxBalanceElement.textContent = 'N/A';
+        jackpotWinsElement.textContent = 'N/A';
+        if (generatedImagesGrid) generatedImagesGrid.innerHTML = '';
+        if (generatedImagesSection) generatedImagesSection.style.display = 'none';
+    }
+}
+
+/**
+ * Configure les écouteurs pour la modale.
+ */
+function setupModalListeners() {
+    const modal = document.getElementById('player-details-modal');
+    const closeButton = modal.querySelector('.close-button');
+
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+
+    // Fermer la modale si l'utilisateur clique en dehors de la zone de contenu
+    if (modal) {
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+}
+
+
+// Expose les fonctions qui doivent être appelées par des scripts spécifiques au jeu (slotMachine.js, etc.)
 window.updateBalanceDisplay = updateBalanceDisplay;
 window.showFloatingWinNumbers = showFloatingWinNumbers;
+window.incrementUserJackpotWins = firebaseService.incrementUserJackpotWins; // Expose la fonction d'incrémentation du jackpot
 
-// Expose game start functions to be called from HTML onclick attributes
+// Expose les fonctions de démarrage du jeu à appeler depuis les attributs onclick HTML
 window.startSlotMachine = startSlotMachine;
 window.startBlackjack = startBlackjack;
 window.startChickenGame = startChickenGame;
-window.startShop = startShop; // Expose startShop
-window.showMainMenu = showMainMenu; // Also expose showMainMenu for the "Retour au Menu" button
-window.collectFreeReward = collectFreeReward; // Expose for the free reward button
+window.startShop = startShop;
+window.showMainMenu = showMainMenu;
+window.collectFreeReward = collectFreeReward;

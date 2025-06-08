@@ -10,28 +10,37 @@ service cloud.firestore {
 
       // Permettre la création d'un nouveau document :
       // Un utilisateur authentifié peut créer SON PROPRE document,
-      // et les champs 'email', 'username', 'balance' doivent être présents et du bon type.
+      // et les champs 'email', 'username', 'balance', 'maxBalance' et 'jackpotWins' doivent être présents et du bon type.
       allow create: if request.auth != null &&
-                        request.auth.uid == userId &&
-                        request.resource.data.email is string &&
-                        request.resource.data.username is string &&
-                        request.resource.data.balance is number;
+                            request.auth.uid == userId &&
+                            request.resource.data.email is string &&
+                            request.resource.data.username is string &&
+                            request.resource.data.balance is number &&
+                            request.resource.data.maxBalance is number &&
+                            request.resource.data.jackpotWins is number;
       
       // Permettre la mise à jour (UPDATE) de documents existants :
       // Un utilisateur authentifié peut mettre à jour SON PROPRE document.
-      // Cette règle valide que si les champs 'balance', 'lastRewardTimestamp' ou 'activeCosmetics'
-      // sont présents dans la mise à jour, ils sont du bon type.
+      // Cette règle valide que si les champs 'balance', 'lastRewardTimestamp', 'activeCosmetics',
+      // 'maxBalance', 'jackpotWins' et 'generatedImages' sont présents dans la mise à jour, ils sont du bon type.
       allow update: if request.auth != null &&
-                        request.auth.uid == userId &&
-                        // Si 'balance' est mis à jour, il doit être un nombre.
-                        (!('balance' in request.resource.data) || request.resource.data.balance is number) &&
-                        // Si 'lastRewardTimestamp' est mis à jour, il doit être un nombre.
-                        (!('lastRewardTimestamp' in request.resource.data) || request.resource.data.lastRewardData is number) &&
-                        // Si 'activeCosmetics' est mis à jour, il doit être une carte (map).
-                        (!('activeCosmetics' in request.resource.data) || request.resource.data.activeCosmetics is map) &&
-                        // Assurez-vous que l'email et la date de création ne sont pas modifiables par le client
-                        request.resource.data.email == resource.data.email &&
-                        request.resource.data.createdAt == resource.data.createdAt;
+                            request.auth.uid == userId &&
+                            // Si 'balance' est mis à jour, il doit être un nombre.
+                            (!('balance' in request.resource.data) || request.resource.data.balance is number) &&
+                            // Si 'lastRewardTimestamp' est mis à jour, il doit être un nombre.
+                            (!('lastRewardTimestamp' in request.resource.data) || request.resource.data.lastRewardTimestamp is number) &&
+                            // Si 'activeCosmetics' est mis à jour, il doit être une carte (map).
+                            (!('activeCosmetics' in request.resource.data) || request.resource.data.activeCosmetics is map) &&
+                            // Si 'maxBalance' est mis à jour, il doit être un nombre.
+                            (!('maxBalance' in request.resource.data) || request.resource.data.maxBalance is number) &&
+                            // Si 'jackpotWins' est mis à jour, il doit être un nombre.
+                            (!('jackpotWins' in request.resource.data) || request.resource.data.jackpotWins is number) &&
+                            // NOUVEAU: Si 'generatedImages' est mis à jour, il doit être un tableau.
+                            (!('generatedImages' in request.resource.data) || request.resource.data.generatedImages is list) &&
+                            // Assurez-vous que l'email, le nom d'utilisateur et la date de création ne sont pas modifiables par le client
+                            request.resource.data.email == resource.data.email &&
+                            request.resource.data.username == resource.data.username &&
+                            request.resource.data.createdAt == resource.data.createdAt;
 
       // Permet la suppression du compte si l'utilisateur est authentifié et que c'est son propre compte
       allow delete: if request.auth != null && request.auth.uid == userId;
@@ -41,6 +50,11 @@ service cloud.firestore {
         // Un utilisateur authentifié peut lire et écrire ses propres cosmétiques possédés
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+      
+      // NOUVEAU : Règles pour la sous-collection 'generatedImages' n'est plus nécessaire car les images sont directement dans le document utilisateur.
+      // match /generatedImages/{imageId} {
+      //   allow read, write: if request.auth != null && request.auth.uid == userId;
+      // }
     }
 
     // Règle pour le jackpot progressif global

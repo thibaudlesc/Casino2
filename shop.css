@@ -1,210 +1,465 @@
-/* Shop Specific Styles */
+/* Shop Specific Styles - Refonte */
 #shop-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     margin-top: 20px;
     width: 100%;
-    max-width: 800px;
-    background-color: #2a3640; /* Dark neutral background */
-    padding: 25px;
-    border-radius: 18px;
-    box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    max-width: 1000px; /* Increased max-width for more space */
+    background-color: #1a202c; /* Dark background, almost black */
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.05); /* Pronounced shadow */
+    border: 1px solid rgba(44, 56, 74, 0.8); /* Subtle, dark border */
     box-sizing: border-box;
+    position: relative;
+    overflow: hidden; /* For background effects */
+}
+
+/* Pseudo-elements for subtle background effect */
+#shop-container::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    right: -50px;
+    bottom: -50px;
+    background: radial-gradient(circle at center, rgba(30, 41, 59, 0.4) 0%, rgba(17, 24, 39, 0) 70%);
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
 }
 
 #shop-container h2 {
-    color: #e0f2f7;
-    margin-bottom: 25px;
-    font-family: 'Orbitron', sans-serif;
-    text-shadow: 0 0 10px rgba(224, 242, 247, 0.5);
+    color: #a7f3d0; /* Vibrant mint green */
+    margin-bottom: 30px;
+    font-family: 'Orbitron', sans-serif; /* A futuristic font */
+    text-shadow: 0 0 15px rgba(167, 243, 208, 0.8); /* Intense neon shadow */
+    font-size: 2.5em; /* Larger font size */
+    letter-spacing: 2px; /* Increased letter spacing */
+    position: relative;
+    z-index: 1;
+    text-align: center;
 }
 
 .cosmetic-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Responsive grid */
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Adjusted for smaller items */
+    gap: 20px; /* Adjusted spacing for smaller items */
     width: 100%;
     justify-content: center;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
 }
 
 .cosmetic-item {
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 15px;
-    padding: 15px;
+    background-color: rgba(31, 41, 55, 0.7); /* Lighter background with transparency */
+    border-radius: 15px; /* More rounded corners */
+    padding: 15px; /* Reduced padding */
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 8px rgba(255, 255, 255, 0.07); /* Adjusted shadow */
+    transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
+    border: 2px solid rgba(55, 65, 81, 0.7); /* More defined border */
+    position: relative;
+    overflow: hidden; /* For effect pseudo-elements */
+}
+
+.cosmetic-item::before { /* Subtle light effect on hover */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(167, 243, 208, 0.15) 0%, rgba(167, 243, 208, 0) 50%, rgba(167, 243, 208, 0.15) 100%);
+    transform: translateX(-100%);
+    transition: transform 0.7s ease-out;
+    opacity: 0;
+}
+
+.cosmetic-item:hover::before {
+    transform: translateX(0%);
+    opacity: 1;
 }
 
 .cosmetic-item.equipped {
-    border: 3px solid #00ffaa; /* Green border for equipped items */
-    box-shadow: 0 0 15px rgba(0, 255, 170, 0.7);
+    border: 4px solid #34d399; /* Brighter mint green for equipped */
+    box-shadow: 0 0 20px rgba(52, 211, 153, 0.8), inset 0 0 10px rgba(52, 211, 153, 0.6); /* Adjusted shadow */
+    transform: scale(1.03); /* Slight enlargement for "equipped" */
 }
 
 .cosmetic-item.owned {
-    border: 3px solid #f39c12; /* Orange border for owned but not equipped */
+    border: 4px solid #fbbf24; /* Golden yellow for owned */
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.7), inset 0 0 8px rgba(251, 191, 36, 0.5); /* Adjusted shadow */
 }
 
-
 .cosmetic-item:hover:not(.equipped):not(.owned) {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    transform: translateY(-8px) scale(1.02); /* More pronounced "pop" effect */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.15); /* Adjusted shadow */
 }
 
 .cosmetic-image {
-    width: 100px;
-    height: 100px;
-    background-color: #3f5161; /* Placeholder background */
-    border-radius: 10px;
-    margin-bottom: 10px;
+    width: 90px; /* Significantly smaller */
+    height: 90px; /* Significantly smaller */
+    background-color: #3e4e60; /* Slightly lighter background */
+    border-radius: 10px; /* Reduced border-radius */
+    margin-bottom: 15px; /* Adjusted margin */
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 3em; /* For emoji/text cosmetics */
-    color: #f5f5f5;
-    overflow: hidden; /* Ensure content stays within bounds */
+    font-size: 3em; /* Adjusted font size for emojis */
+    color: #e2e8f0; /* Softer color */
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.4); /* Adjusted shadow */
+    transition: background-color 0.4s ease;
 }
 
 .cosmetic-image img {
     max-width: 100%;
     max-height: 100%;
-    object-fit: cover; /* Cover the area, cropping if necessary */
+    object-fit: contain; /* Use 'contain' for trophies */
 }
 
 .cosmetic-name {
     font-weight: bold;
-    color: #e0f2f7;
-    margin-bottom: 5px;
-    font-size: 1.1em;
+    color: #e2e8f0; /* Off-white */
+    margin-bottom: 8px; /* Adjusted margin */
+    font-size: 1.1em; /* Smaller font size */
+    text-shadow: 0 0 5px rgba(226, 232, 240, 0.4); /* Adjusted shadow */
 }
 
-.cosmetic-price {
-    color: #00ffaa; /* Green for price */
-    font-weight: bold;
-    margin-bottom: 15px;
-    font-size: 1em;
-}
-
-.cosmetic-item button {
-    padding: 8px 15px;
-    font-size: 0.9em;
-    width: 100%;
-    margin: 0; /* Remove default margin from base.css */
-}
-
-.cosmetic-item button.buy-button {
-    background-color: #00bfa5; /* Teal for buy */
-}
-
-.cosmetic-item button.buy-button:hover:not(:disabled) {
-    background-color: #00998a;
-}
-
-.cosmetic-item button.equip-button {
-    background-color: #5cb85c; /* Green for equip */
-}
-
-.cosmetic-item button.equip-button:hover:not(:disabled) {
-    background-color: #4cae4c;
-}
-
-.cosmetic-item button.equipped-button {
-    background-color: #4a4a5c; /* Disabled/grey for equipped */
-    cursor: default;
-    opacity: 0.7;
-}
-
-/* New style for cosmetic description */
 .cosmetic-description {
-    font-size: 0.85em;
+    font-size: 0.85em; /* Smaller font size */
     color: #a0a0a0;
-    margin-top: 10px;
-    min-height: 3em; /* Ensure consistent height for descriptions */
+    margin-top: 8px; /* Adjusted margin */
+    min-height: 4em; /* Adjusted min-height */
     display: -webkit-box;
-    -webkit-line-clamp: 3; /* Limit to 3 lines */
+    -webkit-line-clamp: 4; /* Limit to 4 lines */
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.4; /* Adjusted line spacing */
+    margin-bottom: 15px; /* Adjusted margin for buttons */
 }
 
+.cosmetic-price {
+    color: #6ee7b7; /* Light green for price */
+    font-weight: bold;
+    margin-bottom: 18px; /* Adjusted space before the button */
+    font-size: 1em; /* Smaller font size */
+    letter-spacing: 0.8px;
+}
 
-/* Media Queries for Responsiveness */
+.cosmetic-item button {
+    padding: 10px 18px; /* Smaller padding */
+    font-size: 0.9em; /* Smaller font size */
+    width: calc(100% - 20px); /* Leaves some margin */
+    margin: 8px auto 0 auto; /* Centered and spaced */
+    border-radius: 8px; /* Smaller border-radius */
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Adjusted shadow */
+}
+
+.cosmetic-item button.purchase-button {
+    background-color: #10b981; /* Forest green for purchase */
+    color: #fff;
+}
+
+.cosmetic-item button.purchase-button:hover:not(:disabled) {
+    background-color: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+}
+
+.cosmetic-item button.activate-button {
+    background-color: #3b82f6; /* Bright blue for equip */
+    color: #fff;
+}
+
+.cosmetic-item button.activate-button:hover:not(:disabled) {
+    background-color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+}
+
+.cosmetic-item button.deactivate-button {
+    background-color: #ef4444; /* Red for deactivate */
+    color: #fff;
+}
+
+.cosmetic-item button.deactivate-button:hover:not(:disabled) {
+    background-color: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+}
+
+.cosmetic-item button:disabled {
+    background-color: #4b5563; /* Dark grey for disabled */
+    color: #a0a0a0;
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: none;
+}
+
+/* Specific styles for trophy generation buttons */
+.generate-trophy-button {
+    background-color: #8b5cf6; /* Violet */
+    color: #fff;
+}
+
+.generate-trophy-button:hover:not(:disabled) {
+    background-color: #7c3aed;
+}
+
+/* Trophy generation section */
+#trophy-generation-grid {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.image-display {
+    width: 100%;
+    max-width: 600px; /* Larger preview */
+    height: auto;
+    min-height: 250px; /* Minimum height to prevent collapse */
+    background-color: #2d3748;
+    border: 3px dashed #4a5568;
+    border-radius: 15px;
+    object-fit: contain;
+    margin-top: 25px;
+    box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+    transition: all 0.4s ease;
+}
+
+#generated-trophy-preview {
+    border: 3px solid #6366f1; /* Violet border for preview */
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.7);
+}
+
+.loading-text {
+    color: #a0a0a0;
+    font-size: 1.2em;
+    margin-top: 15px;
+}
+
+.message-box {
+    position: fixed;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(30, 41, 59, 0.98);
+    color: #fff;
+    padding: 18px 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    font-size: 1.1em;
+    font-weight: 600;
+    animation: fadeInOut 3s forwards;
+    border: 2px solid rgba(167, 243, 208, 0.6);
+    text-align: center;
+}
+
+.loss-text {
+    color: #fca5a5; /* Light red for errors */
+    border-color: #ef4444;
+}
+
+.win-text {
+    color: #a7f3d0; /* Light green for successes */
+    border-color: #34d399;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateX(-50%) translateY(30px); }
+    10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(30px); }
+}
+
+/* User Trophy Collection Grid */
+#user-trophy-collection-grid {
+    margin-top: 20px;
+}
+
+.cosmetic-image-display { /* For trophy images in the collection */
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+#no-images-message {
+    color: #a0a0a0;
+    font-style: italic;
+    text-align: center;
+    width: 100%;
+}
+
+/* Media Queries for Responsiveness - Updated */
+@media (max-width: 900px) {
+    #shop-container {
+        padding: 25px;
+        border-radius: 18px;
+    }
+    #shop-container h2 {
+        font-size: 2.2em;
+        margin-bottom: 25px;
+    }
+    .cosmetic-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Adjusted */
+        gap: 20px; /* Adjusted */
+    }
+    .cosmetic-item {
+        padding: 15px; /* Adjusted */
+        border-radius: 15px; /* Adjusted */
+    }
+    .cosmetic-image {
+        width: 80px; /* Adjusted */
+        height: 80px; /* Adjusted */
+        font-size: 2.8em; /* Adjusted */
+        margin-bottom: 12px; /* Adjusted */
+    }
+    .cosmetic-name {
+        font-size: 1.05em; /* Adjusted */
+    }
+    .cosmetic-description {
+        font-size: 0.8em; /* Adjusted */
+        min-height: 3.5em; /* Adjusted */
+        -webkit-line-clamp: 4;
+    }
+    .cosmetic-price {
+        font-size: 0.9em; /* Adjusted */
+        margin-bottom: 12px; /* Adjusted */
+    }
+    .cosmetic-item button {
+        padding: 9px 14px; /* Adjusted */
+        font-size: 0.85em; /* Adjusted */
+    }
+    .image-display {
+        max-width: 100%;
+    }
+}
+
 @media (max-width: 768px) {
     #shop-container {
         padding: 20px;
+        border-radius: 15px;
+    }
+    #shop-container h2 {
+        font-size: 1.8em;
+        margin-bottom: 20px;
     }
     .cosmetic-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 15px;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Adjusted */
+        gap: 15px; /* Adjusted */
+    }
+    .cosmetic-item {
+        padding: 12px; /* Adjusted */
+        border-radius: 12px; /* Adjusted */
     }
     .cosmetic-image {
-        width: 80px;
-        height: 80px;
-        font-size: 2.5em;
+        width: 70px; /* Adjusted */
+        height: 70px; /* Adjusted */
+        font-size: 2.5em; /* Adjusted */
+        margin-bottom: 10px; /* Adjusted */
     }
     .cosmetic-name {
-        font-size: 1em;
-    }
-    .cosmetic-price {
-        font-size: 0.9em;
-    }
-    .cosmetic-item button {
-        padding: 7px 12px;
-        font-size: 0.8em;
+        font-size: 1em; /* Adjusted */
     }
     .cosmetic-description {
-        font-size: 0.8em;
+        font-size: 0.75em; /* Adjusted */
+        min-height: 3em; /* Adjusted */
+        -webkit-line-clamp: 4;
+    }
+    .cosmetic-price {
+        font-size: 0.8em; /* Adjusted */
+        margin-bottom: 10px; /* Adjusted */
+    }
+    .cosmetic-item button {
+        padding: 7px 10px; /* Adjusted */
+        font-size: 0.8em; /* Adjusted */
+    }
+    .message-box {
+        width: 90%;
+        font-size: 0.9em;
+        padding: 12px 18px;
     }
 }
 
 @media (max-width: 480px) {
     #shop-container {
         padding: 15px;
+        margin-top: 10px;
+        border-radius: 10px;
+    }
+    #shop-container h2 {
+        font-size: 1.5em;
+        margin-bottom: 15px;
+        text-align: center;
     }
     .cosmetic-grid {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); /* Adjusted for very small screens */
+        gap: 10px; /* Adjusted */
+    }
+    .cosmetic-item {
+        padding: 8px; /* Further reduced */
+        border-radius: 10px; /* Further reduced */
     }
     .cosmetic-image {
-        width: 70px;
-        height: 70px;
-        font-size: 2em;
+        width: 50px; /* Further reduced */
+        height: 50px; /* Further reduced */
+        font-size: 2em; /* Further reduced */
+        margin-bottom: 8px; /* Further reduced */
     }
     .cosmetic-name {
-        font-size: 0.9em;
-    }
-    .cosmetic-price {
-        font-size: 0.8em;
-    }
-    .cosmetic-item button {
-        padding: 6px 10px;
-        font-size: 0.75em;
+        font-size: 0.8em; /* Further reduced */
     }
     .cosmetic-description {
-        font-size: 0.75em;
+        font-size: 0.7em; /* Further reduced */
+        min-height: 2.5em; /* Further reduced */
+        -webkit-line-clamp: 3;
+    }
+    .cosmetic-price {
+        font-size: 0.75em; /* Further reduced */
+        margin-bottom: 8px; /* Further reduced */
+    }
+    .cosmetic-item button {
+        padding: 6px 8px; /* Further reduced */
+        font-size: 0.7em; /* Further reduced */
+    }
+    .message-box {
+        width: 95%;
+        font-size: 0.8em;
+        padding: 10px 15px;
     }
 }
 
 /* Styles for active cosmetic effects (these will be applied to body or game elements) */
 body.slot-theme-gold .slot {
-    border-color: gold;
-    box-shadow: 0 0 10px gold, inset 0 0 5px gold;
+    border-color: #ffd700; /* Or vif */
+    box-shadow: 0 0 15px #ffd700, inset 0 0 8px #ffd700;
 }
 
 body.slot-theme-cyber .slot {
     border-color: #00f0f0; /* Cyan */
-    box-shadow: 0 0 10px #00f0f0, inset 0 0 5px #00f0f0;
+    box-shadow: 0 0 15px #00f0f0, inset 0 0 8px #00f0f0;
     background-color: #1a1a2e; /* Dark blue */
 }
 
 body.slot-theme-dark .slot {
     border-color: #666;
-    box-shadow: 0 0 5px #444, inset 0 0 3px #333;
+    box-shadow: 0 0 8px #444, inset 0 0 5px #333;
 }

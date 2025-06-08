@@ -979,7 +979,8 @@ async function searchUsersByUsername(usernameQuery) {
         });
         console.log("FirebaseService: Résultats de la recherche d'utilisateurs :", results);
         return results;
-    } catch (error) {
+    }
+    catch (error) {
         console.error("FirebaseService: Erreur lors de la recherche d'utilisateurs par nom :", error);
         return [];
     }
@@ -1004,54 +1005,8 @@ async function getUserDetails(userId) {
         if (userDoc.exists) {
             const userData = userDoc.data();
             
-            // Récupérer les cosmétiques possédés par l'utilisateur ciblé
-            const userCosmeticsSnapshot = await userDocRef.collection('userCosmetics').get();
-            const ownedCosmeticIds = userCosmeticsSnapshot.docs.map(doc => doc.id);
-
-            // Récupérer les cosmétiques actifs (stockés directement dans le document utilisateur)
-            const targetActiveCosmeticsRaw = userData.activeCosmetics || {};
-            console.log("FirebaseService: targetActiveCosmeticsRaw (depuis Firestore) :", targetActiveCosmeticsRaw);
-
-            // S'assurer que allAvailableCosmetics est chargé
-            if (allAvailableCosmetics.length === 0) {
-                await loadAllCosmetics(); // Charger s'il n'est pas déjà chargé
-            }
-
-            const detailedOwnedCosmetics = [];
-            ownedCosmeticIds.forEach(ownedId => {
-                const cosmetic = allAvailableCosmetics.find(c => c.id === ownedId);
-                if (cosmetic) {
-                    detailedOwnedCosmetics.push({ name: cosmetic.name, type: cosmetic.type });
-                }
-            });
-            console.log("FirebaseService: detailedOwnedCosmetics :", detailedOwnedCosmetics);
-
-
-            const detailedActiveCosmetics = [];
-            for (const typeKey in targetActiveCosmeticsRaw) {
-                const activeValue = targetActiveCosmeticsRaw[typeKey]; // Ceci est la valeur, par exemple, 'gold_theme_class' ou un bonus numérique pour les taux de drop
-                
-                // Si c'est un bonus/malus de taux de drop (la clé est le symbole, la valeur est numérique)
-                // On détecte les symboles de slot comme des émojis (longueur 1 ou 2 pour les caractères multi-octets)
-                if (typeKey.length <= 2 && /[\u{1F3B0}-\u{1F6FF}]|[\u{2600}-\u{26FF}]/u.test(typeKey)) { 
-                    const effectLabel = activeValue < 0 ? 'Diminution' : 'Augmentation';
-                    const sign = activeValue < 0 ? '' : '+';
-                    detailedActiveCosmetics.push({
-                        name: `Taux de drop ${typeKey}`,
-                        type: 'slot_drop_rate_effect', // Type générique pour l'affichage
-                        value: `${effectLabel} ${sign}${Math.abs(activeValue)}%`
-                    });
-                } else { // Pour les autres types de cosmétiques comme les thèmes, bordures, etc.
-                    // Rechercher le cosmétique qui a ce typeKey comme son 'type' ET 'activeValue' comme sa 'valeur' ou 'id'
-                    const cosmetic = allAvailableCosmetics.find(c => 
-                        (c.type === typeKey && (c.value === activeValue || c.id === activeValue))
-                    );
-                    if (cosmetic) {
-                        detailedActiveCosmetics.push({ name: cosmetic.name, type: cosmetic.type });
-                    }
-                }
-            }
-            console.log("FirebaseService: detailedActiveCosmetics (calculé) :", detailedActiveCosmetics);
+            // Log the raw data to check if it's being fetched correctly
+            console.log(`FirebaseService: Raw user data for ${userId}:`, userData);
 
             // Récupérer les images générées par cet utilisateur
             const userGeneratedImages = userData.generatedImages || [];
@@ -1062,8 +1017,6 @@ async function getUserDetails(userId) {
                 balance: userData.balance,
                 maxBalance: userData.maxBalance || userData.balance, // Utiliser le solde actuel si maxBalance n'est pas défini
                 jackpotWins: userData.jackpotWins || 0, // Utiliser 0 si jackpotWins n'est pas défini
-                ownedCosmetics: detailedOwnedCosmetics,
-                activeCosmetics: detailedActiveCosmetics,
                 generatedImages: userGeneratedImages // Inclure les images générées
             };
         } else {

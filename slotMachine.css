@@ -399,3 +399,108 @@
         box-shadow: 0 0 60px #ff4d4d, inset 0 0 30px #ff4d4d;
     }
 }
+
+/* NEW: Styles for Symbol Stats Display (moved from base.css) */
+.symbol-stats-display {
+    margin-top: 30px;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 700px;
+    box-sizing: border-box;
+    text-align: center;
+    margin-left: auto; /* Centrer horizontalement */
+    margin-right: auto; /* Centrer horizontalement */
+}
+
+.symbol-stats-display h4 {
+    color: #e0f2f7;
+    font-family: 'Orbitron', sans-serif;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    text-shadow: 0 0 8px rgba(224, 242, 247, 0.5);
+}
+
+.symbol-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Responsive grid */
+    gap: 15px;
+    justify-content: center;
+}
+
+.symbol-stat-item {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px; /* Ensure consistent height */
+    transition: all 0.3s ease-in-out; /* Add transition for glow effect */
+}
+
+.symbol-stat-item .symbol-icon {
+    font-size: 2.2em; /* Larger emoji */
+    margin-bottom: 5px;
+}
+
+.symbol-stat-item .symbol-info {
+    font-size: 0.85em;
+    color: #c9d2da;
+    line-height: 1.4;
+}
+
+/* New style for max level glow */
+.symbol-stat-item.max-level-glow {
+    border-color: #00ffaa; /* Vibrant green for max level */
+    box-shadow: 0 0 15px #00ffaa, 0 4px 15px rgba(0, 255, 170, 0.6);
+    animation: pulseMaxLevel 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes pulseMaxLevel {
+    0% {
+        box-shadow: 0 0 10px #00ffaa, 0 4px 10px rgba(0, 255, 170, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 25px #00ffaa, 0 4px 20px rgba(0, 255, 170, 0.8);
+    }
+}
+
+/* Responsive adjustments for symbol stats display */
+@media (max-width: 768px) {
+    .symbol-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+    }
+    .symbol-stats-display h4 {
+        font-size: 1.3em;
+    }
+    .symbol-stat-item .symbol-icon {
+        font-size: 2em;
+    }
+    .symbol-stat-item .symbol-info {
+        font-size: 0.8em;
+    }
+}
+
+@media (max-width: 480px) {
+    .symbol-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 8px;
+    }
+    .symbol-stats-display h4 {
+        font-size: 1.2em;
+    }
+    .symbol-stat-item .symbol-icon {
+        font-size: 1.8em;
+    }
+    .symbol-stat-item .symbol-info {
+        font-size: 0.75em;
+    }
+}
+

@@ -6,16 +6,20 @@
 
 
 /* General Body and Layout */
+/* General Body and Layout */
 body {
     font-family: 'Inter', sans-serif; /* Changed from Montserrat */
     /* Subtler background gradient for a more refined look */
     background: linear-gradient(to right, #34495e, #2c3e50); /* Darker, less saturated blue/grey */
     color: #f5f5f5; /* Slightly softer white for text */
     display: flex;
-    justify-content: center;
+    flex-direction: column; /* Changed to column to allow content stacking */
+    justify-content: flex-start; /* Align content to the start, not center */
     align-items: center;
     min-height: 100vh;
     margin: 0;
+    overflow-y: auto; /* Allow vertical scrolling */
+    overflow-x: hidden; /* Hide horizontal overflow */
 }
 
 .container {
@@ -162,68 +166,6 @@ input[type="password"]:focus {
     to { text-shadow: 0 0 15px rgba(0, 255, 170, 1); }
 }
 
-/* Media Queries for Responsiveness */
-@media (max-width: 768px) {
-    .container {
-        padding: 20px 25px;
-    }
-
-    h1 {
-        font-size: 1.8em;
-    }
-
-    h2 {
-        font-size: 1.5em;
-    }
-
-    button {
-        padding: 10px 20px;
-        font-size: 1em;
-        margin: 8px 4px;
-    }
-
-    .main-menu .game-buttons {
-        flex-direction: column; /* Stack buttons vertically on smaller screens */
-        align-items: center;
-    }
-
-    .main-menu .game-button {
-        width: 90%; /* Make buttons take more width */
-        max-width: 300px; /* Limit max width */
-    }
-
-    input[type="number"],
-    input[type="text"],
-    input[type="password"] {
-        width: calc(100% - 20px); /* Adjust width for smaller screens */
-        max-width: 250px;
-    }
-}
-
-@media (max-width: 480px) {
-    .container {
-        padding: 15px 15px;
-    }
-
-    h1 {
-        font-size: 1.5em;
-    }
-
-    h2 {
-        font-size: 1.2em;
-    }
-
-    p {
-        font-size: 0.9em;
-    }
-
-    button {
-        padding: 8px 15px;
-        font-size: 0.9em;
-        margin: 6px 3px;
-    }
-}
-
 /* Styles pour les nombres de gain flottants */
 .floating-win-number {
     position: absolute;
@@ -288,7 +230,7 @@ input[type="password"]:focus {
     padding: 18px 30px; /* Slightly more padding */
     border-radius: 15px; /* More rounded corners */
     margin: 25px auto; /* Increased margin */
-    max-width: 450px; /* Slightly wider */
+    max-width: 550px; /* Slightly wider */
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), inset 0 0 15px rgba(255, 165, 0, 0.6); /* Stronger outer and inner glow */
     font-family: 'Orbitron', sans-serif;
     font-size: 1.8em; /* Larger font size for prominence */
@@ -488,4 +430,35 @@ input[type="password"]:focus {
 
 .free-reward-countdown.countdown-text {
     color: #f0ad4e; /* Orange/yellow during countdown */
+}
+
+/* Styles for generic message boxes (replacing alert/confirm) */
+.message-box {
+    position: fixed; /* Fixed position relative to viewport */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 20px 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+    z-index: 10000; /* Ensure it's on top of everything */
+    color: white;
+    font-size: 1.3em;
+    font-weight: bold;
+    text-align: center;
+    max-width: 80%;
+    box-sizing: border-box;
+    animation: fadeInScale 0.3s ease-out;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
 }

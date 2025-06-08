@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="slotMachine.css">
     <link rel="stylesheet" href="blackjack.css">
     <link rel="stylesheet" href="chicken.css">
+    <link rel="stylesheet" href="shop.css"> <!-- New: Link to shop.css -->
     <style>
         /* Styles for the login page */
         #auth-container {
@@ -54,7 +55,7 @@
             padding: 12px 25px;
             font-size: 1.1em;
             cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 191, 165, 0.4); /* Teal glow */
             margin: 10px 5px; /* Spacing between buttons */
         }
@@ -205,45 +206,21 @@
         </div>
 
         <div id="game-container" style="display:none;">
-            <p>Solde : <span id="current-balance">0</span> €</p>
-            <div class="main-menu">
-                <h1>Choisissez votre jeu</h1>
-                <div class="game-buttons">
-                    <button class="game-button" onclick="startSlotMachine()">Machines à Sous</button>
-                    <button class="game-button" onclick="startBlackjack()">Blackjack</button>
-                    <button class="game-button" onclick="startChickenGame()">Jeu du Poulet</button>
-                    <!-- Free Reward Button -->
-                    <button id="free-reward-button" class="game-button free-reward-button">Récompense Gratuite</button>
-                </div>
-                 <div id="free-reward-countdown" class="free-reward-countdown"></div>
-            </div>
-            <button id="logout-button" class="game-button logout-button">Se déconnecter</button>
-
-            <!-- New container for Progressive Jackpot -->
-            <div id="progressive-jackpot-container">
-                <p>JACKPOT : <span id="progressive-jackpot-display">0.00</span> €</p>
-            </div>
-
-            <!-- New container for Leaderboard -->
-            <div id="leaderboard-container">
-                <h2>🏆 Leaderboard 🏆</h2>
-                <ol id="leaderboard-list"></ol>
-            </div>
-
-            <div id="slot-machine-container" style="display:none;"></div>
-            <div id="blackjack-container" style="display:none;"></div>
-            <div id="chicken-game-container" style="display:none;"></div>
-
-            <button id="back-to-menu" class="game-button" style="display:none; margin-top: 20px;" onclick="showMainMenu()">Retour au Menu</button>
+            <!-- Content will be dynamically loaded here by gameLogic.js -->
+            <!-- The shop-container is initially hidden and will be shown by gameLogic.js when startShop is called -->
+            <div id="shop-container" style="display:none;"></div>
         </div>
     </div>
 
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
     <script>
       // Your web app's Firebase configuration
+      // IMPORTANT: DO NOT expose your actual API key if this is a public repository.
+      // For this environment, it's fine as it's a test setup.
       const firebaseConfig = {
         apiKey: "AIzaSyD20ioDrmrfv42sOlZfE_CpUYwMctaAJhI",
         authDomain: "moncasinocloud.firebaseapp.com",
@@ -253,15 +230,19 @@
         appId: "1:334901643000:web:241325294edf3df6085d0d"
       };
 
-      // Initialize Firebase
-      const app = firebase.initializeApp(firebaseConfig); // Use firebase.initializeApp
+      // Initialize Firebase (will be used in firebaseService.js)
+      const app = firebase.initializeApp(firebaseConfig);
       const auth = firebase.auth();
       const db = firebase.firestore();
     </script>
 
-    <script src="main.js"></script>
+    <!-- Our custom service and game logic scripts -->
+    <script src="firebaseService.js"></script>
+    <script src="gameLogic.js"></script>
+    <!-- Game specific scripts -->
     <script src="slotMachine.js"></script>
     <script src="blackjack.js"></script>
     <script src="chicken.js"></script>
+    <script src="shop.js"></script> <!-- New: Link to shop.js -->
 </body>
 </html>

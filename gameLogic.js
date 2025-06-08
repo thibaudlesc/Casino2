@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     firebaseService.onAllCosmeticsLoaded(handleAllCosmeticsLoaded);
     firebaseService.onMaxBalanceUpdated(updateMaxBalanceDisplay); // Nouveau : appel de la fonction de mise à jour du solde max
     firebaseService.onJackpotWinsUpdated(updateJackpotWinsDisplay); // Nouveau : appel de la fonction de mise à jour des jackpots remportés
+    firebaseService.onUserImagesUpdated(handleUserGeneratedImagesUpdated); // Nouveau : appel de la fonction pour les images générées
 
     setupPlayerSearchListeners(); // Configure les écouteurs pour la recherche de joueurs
     setupModalListeners(); // Configure les écouteurs pour la modale
@@ -94,6 +95,7 @@ function handleUserDataLoaded(balance) {
     updateBalanceDisplay(balance);
     updateMaxBalanceDisplay(firebaseService.getUserMaxBalance());
     updateJackpotWinsDisplay(firebaseService.getUserJackpotWins());
+    handleUserGeneratedImagesUpdated(firebaseService.getUserGeneratedImages());
 }
 
 /**
@@ -146,6 +148,20 @@ function handleAllCosmeticsLoaded(allCosmetics) {
         initShop(updateBalanceDisplay, showFloatingWinNumbers, currencyFormatter, allCosmetics);
     }
 }
+
+/**
+ * Gère la mise à jour des images générées par l'utilisateur.
+ * @param {Array<Object>} images - Le tableau des images générées par l'utilisateur.
+ */
+function handleUserGeneratedImagesUpdated(images) {
+    console.log("GameLogic: Images générées par l'utilisateur mises à jour :", images);
+    // Si la modale est ouverte et affiche les détails de l'utilisateur actuel, la rafraîchir.
+    const modal = document.getElementById('player-details-modal');
+    if (modal && modal.style.display === 'flex' && modal.querySelector('#modal-player-username').textContent === firebaseService.getCurrentUsername()) {
+        showPlayerDetails(firebaseService.getCurrentUserId());
+    }
+}
+
 
 // --- Logique de l'interface utilisateur d'authentification ---
 
@@ -514,40 +530,42 @@ function startBlackjack() {
     hideAllGameContainersAndMenu();
 
     const blackjackContainer = document.getElementById('blackjack-container');
-    if (!blackjackContainer.innerHTML.trim()) {
-        blackjackContainer.innerHTML = `
-            <h2>♦ BLACKJACK ♦</h2>
-            <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
-            <div id="blackjack-game-area">
-                <h3>Croupier (<span id="dealer-score">0</span>)</h3>
-                <div id="dealer-hand" class="blackjack-hand"></div>
+    // Always re-render Blackjack HTML to ensure event listeners are correctly attached
+    // and initial state is clean for every new game entry.
+    blackjackContainer.innerHTML = `
+        <h2>♦ BLACKJACK ♦</h2>
+        <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
+        <div id="blackjack-game-area">
+            <h3>Croupier (<span id="dealer-score">0</span>)</h3>
+            <div id="dealer-hand" class="blackjack-hand"></div>
 
-                <h3>Joueur (<span id="player-score">0</span>)</h3>
-                <div id="player-hand" class="blackjack-hand"></div>
+            <h3>Joueur (<span id="player-score">0</span>)</h3>
+            <div id="player-hand" class="blackjack-hand"></div>
 
-                <p id="blackjack-message" class="blackjack-result">Placez votre mise pour commencer !</p>
-                <p id="blackjack-current-bet">Mise actuelle : 0 €</p>
+            <p id="blackjack-message" class="blackjack-result">Placez votre mise pour commencer !</p>
+            <p id="blackjack-current-bet">Mise actuelle : 0 €</p>
 
-                <div id="blackjack-controls">
-                    <div class="bet-controls">
-                        <label for="blackjack-bet-amount">Mise : </label>
-                        <input type="number" id="blackjack-bet-amount" value="10" min="1" step="1">
-                    </div>
-                    <div class="blackjack-actions">
-                        <button id="blackjack-deal-button" class="game-button" disabled>Distribuer</button>
-                        <button id="blackjack-hit-button" class="game-button" disabled>Tirer</button>
-                        <button id="blackjack-stand-button" class="game-button" disabled>Rester</button>
-                        <button id="blackjack-double-button" class="game-button" disabled>Doubler</button>
-                    </div>
+            <div id="blackjack-controls">
+                <div class="bet-controls">
+                    <label for="blackjack-bet-amount">Mise : </label>
+                    <input type="number" id="blackjack-bet-amount" value="10" min="1" step="1">
+                </div>
+                <div class="blackjack-actions">
+                    <button id="blackjack-deal-button" class="game-button">Distribuer</button>
+                    <button id="blackjack-hit-button" class="game-button" disabled>Tirer</button>
+                    <button id="blackjack-stand-button" class="game-button" disabled>Rester</button>
+                    <button id="blackjack-double-button" class="game-button" disabled>Doubler</button>
                 </div>
             </div>
-            <button id="back-to-menu-blackjack" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
-        `;
-        initBlackjack(); 
-        document.getElementById('back-to-menu-blackjack').addEventListener('click', showMainMenu);
-    }
+        </div>
+        <button id="back-to-menu-blackjack" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
+    `;
+    initBlackjack(); 
+    document.getElementById('back-to-menu-blackjack').addEventListener('click', showMainMenu);
+    
     blackjackContainer.style.display = 'block';
     updateBalanceDisplay(firebaseService.getUserBalance());
+    console.log("GameLogic: Conteneur Blackjack affiché et initBlackjack() appelé.");
 }
 
 function startChickenGame() {
@@ -1150,3 +1168,4 @@ window.startChickenGame = startChickenGame;
 window.startShop = startShop;
 window.showMainMenu = showMainMenu;
 window.collectFreeReward = collectFreeReward;
+

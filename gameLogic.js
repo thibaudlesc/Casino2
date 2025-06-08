@@ -398,28 +398,9 @@ function displayGameSelectionMenu() {
  * Affiche le menu principal et masque les conteneurs spécifiques au jeu.
  */
 function showMainMenu() {
-    document.getElementById('slot-machine-container').style.display = 'none';
-    document.getElementById('blackjack-container').style.display = 'none';
-    document.getElementById('chicken-game-container').style.display = 'none';
-    document.getElementById('shop-container').style.display = 'none';
-
-    document.querySelector('.main-menu').style.display = 'block';
-    document.getElementById('progressive-jackpot-container').style.display = 'block';
-    document.getElementById('leaderboard-container').style.display = 'block';
-    document.getElementById('player-search-container').style.display = 'flex'; // Afficher le conteneur de recherche
-    document.getElementById('logout-button').style.display = 'block';
-    document.getElementById('free-reward-button').style.display = 'block';
-    document.getElementById('free-reward-countdown').style.display = 'block';
-    document.getElementById('back-to-menu').style.display = 'none';
-
-    updateBalanceDisplay(firebaseService.getUserBalance());
-    updateMaxBalanceDisplay(firebaseService.getUserMaxBalance());
-    updateJackpotWinsDisplay(firebaseService.getUserJackpotWins());
-    updateProgressiveJackpotDisplay(firebaseService.getProgressiveJackpot());
-    startRewardCountdown();
-    firebaseService.loadLeaderboard();
-    
-    currentGame = null; 
+    // Recharger la page pour réinitialiser complètement l'état de l'application.
+    // Cela réinitialisera tous les jeux et rechargera les données de Firebase.
+    window.location.reload();
 }
 
 

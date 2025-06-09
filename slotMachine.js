@@ -4,14 +4,14 @@ let lastBetAmount = 0; // Store the bet amount from when free spins were awarded
 const NUM_REELS = 5;
 const NUM_ROWS = 3;
 let autoSpinInterval = null; // Variable to hold the interval for auto-spin
-let isSpinning = false; // Flag to prevent multiple spins during animation
+let isSpinning = false; // Flag to prevent multiple calls while spinning
 let autoSpinRemaining = 0; // New: Variable to track remaining auto spins
 
 // Définition des symboles et de leurs poids pour la volatilité (simplifiée)
 const SYMBOLS = ['🍒', '🍊', '🔔', '💎', '7️⃣', 'BAR', '⭐', '💯', '💣']; // Changed '💰' to '💯' and '💩' to '💣'
 
 // Original SYMBOL_WEIGHTS. We will modify a copy based on active cosmetics.
-const ORIGINAL_SYMBOL_WEIGHTS = { 
+const ORIGINAL_SYMBOL_WEIGHTS = {
     '🍒': 0.25, // Cherry (frequent, low payout)
     '🍊': 0.20,
     '🔔': 0.18,
@@ -19,7 +19,7 @@ const ORIGINAL_SYMBOL_WEIGHTS = {
     '7️⃣': 0.11, // Higher payout
     'BAR': 0.07, // Highest payout for BAR combinations
     '⭐': 0.05, // Scatter for Free Spins
-    '💯': 0.07, // Jackpot Symbol (appears only during free spins) - Changed from '💰'
+    '💯': 0.06, // Jackpot Symbol (appears only during free spins) - Changed from '💰'
     '💣': 0.10 // Malus Symbol (appears only during free spins) - Changed from '💩'
 };
 
@@ -111,7 +111,11 @@ function initSlotMachine() {
     updateFreeSpinsDisplay();
     updateSlotMachineMode();
     updateSymbolStatsDisplay(); // Call to display symbol stats on init
-    updateAutoSpinDisplay(); // New: Initial call to update auto-spin display
+    updateAutoSpinDisplay(); // Initial call to update auto-spin display
+
+    // Make sure to re-apply cosmetic visuals if any are active
+    const activeCosmetics = firebaseService.getActiveCosmetics();
+    applyActiveCosmeticsToSlot(activeCosmetics);
 }
 
 function updateFreeSpinsDisplay() {
@@ -136,13 +140,13 @@ function updateAutoSpinDisplay() {
 
 function updateSlotMachineMode() {
     const slotsGrid = document.getElementById('slots-grid');
-    const betSelect = document.getElementById('bet-select'); 
+    const betSelect = document.getElementById('bet-select');
     const autoSpinButton = document.getElementById('auto-spin-button');
 
     if (slotsGrid) {
         if (freeSpins > 0) {
             slotsGrid.classList.add('slot-machine-free-spin-mode');
-            if (betSelect) { 
+            if (betSelect) {
                 betSelect.disabled = true; // Disable bet input during free spins
                 betSelect.value = lastBetAmount; // Ensure bet is set to last won bet
             }
@@ -151,12 +155,12 @@ function updateSlotMachineMode() {
             }
         } else {
             slotsGrid.classList.remove('slot-machine-free-spin-mode');
-            if (betSelect) { 
+            if (betSelect) {
                 betSelect.disabled = false; // Enable bet input when no free spins
             }
             if (autoSpinButton) {
                 // Only enable if autoSpinRemaining is not active
-                autoSpinButton.disabled = (autoSpinRemaining > 0); 
+                autoSpinButton.disabled = (autoSpinRemaining > 0);
             }
         }
     }
@@ -166,7 +170,7 @@ function updateSlotMachineMode() {
 function toggleAutoSpin() {
     const autoSpinButton = document.getElementById('auto-spin-button');
     const spinButton = document.getElementById('spin-button');
-    const betSelect = document.getElementById('bet-select'); 
+    const betSelect = document.getElementById('bet-select');
     const gameContainer = document.getElementById('game-container'); // Get the main game container for message box
 
     if (autoSpinInterval) {
@@ -176,7 +180,7 @@ function toggleAutoSpin() {
         autoSpinRemaining = 0; // Reset remaining spins
         autoSpinButton.textContent = 'Auto Spin';
         spinButton.disabled = false;
-        betSelect.disabled = false; 
+        betSelect.disabled = false;
         updateAutoSpinDisplay(); // Update display to show no remaining spins
     } else {
         // Start auto-spin
@@ -193,7 +197,7 @@ function toggleAutoSpin() {
         autoSpinRemaining = 100; // New: Set max auto spins
         autoSpinButton.textContent = 'Arrêter Auto Spin';
         spinButton.disabled = true; // Disable manual spin button
-        betSelect.disabled = true; 
+        betSelect.disabled = true;
         updateAutoSpinDisplay(); // Initial update for auto-spin display
 
         // Start the first spin immediately
@@ -224,12 +228,12 @@ async function spinSlots() {
     if (isSpinning) return; // Prevent multiple calls while spinning
     isSpinning = true;
 
-    const betSelect = document.getElementById('bet-select'); 
+    const betSelect = document.getElementById('bet-select');
     const spinButton = document.getElementById('spin-button');
     const autoSpinButton = document.getElementById('auto-spin-button');
     const slotsGrid = document.getElementById('slots-grid');
     const gameContainer = document.querySelector('#game-container'); // Get the main game container for floating numbers
-    let bet = parseInt(betSelect.value); 
+    let bet = parseInt(betSelect.value);
 
     let isFreeSpinRound = (freeSpins > 0);
 
@@ -259,7 +263,7 @@ async function spinSlots() {
 
     // Disable buttons during the spin animation
     spinButton.disabled = true;
-    betSelect.disabled = true; 
+    betSelect.disabled = true;
     if (autoSpinInterval) {
         autoSpinButton.disabled = true;
     }
@@ -357,7 +361,7 @@ async function spinSlots() {
     const winningElementsIndices = result.winningElementsIndices;
 
     // Check for Malus win (5 '💣' symbols during free spins)
-    const malusSymbol = '💣'; 
+    const malusSymbol = '💣';
     let malusSymbolCount = 0;
     finalSymbolsGrid.forEach(symbol => {
         if (symbol === malusSymbol) {
@@ -369,7 +373,7 @@ async function spinSlots() {
         await firebaseService.saveUserBalance(Math.floor(firebaseService.getUserBalance() / 2)); // Divide balance by 2
         document.getElementById('gain-text').textContent = `MALUS! Votre solde est divisé par 2 !`;
         triggerMalusPhrase(gameContainer); // Trigger the custom malus phrase animation
-        
+
         // Add malus animation class to the grid outline
         if (slotsGrid) {
             slotsGrid.classList.add('slot-machine-malus-mode');
@@ -389,18 +393,20 @@ async function spinSlots() {
     });
 
     if (jackpotSymbolCount >= 5 && isFreeSpinRound) {
+        console.log("SlotMachine: Jackpot remporté !");
         const jackpotAmount = firebaseService.getProgressiveJackpot();
         totalPayout += jackpotAmount; // Award the progressive jackpot
         document.getElementById('gain-text').textContent = `JACKPOT! Vous avez gagné ${jackpotAmount.toFixed(2)} € !`;
-        // Reset the progressive jackpot after it's won
-        await firebaseService.saveProgressiveJackpot(10000); // Reset to initial value
+        // Reset the progressive jackpot to half its current value after it's won
+        await firebaseService.saveProgressiveJackpot(jackpotAmount / 2); 
         updateProgressiveJackpotDisplay(firebaseService.getProgressiveJackpot());
+        await firebaseService.incrementUserJackpotWins(); // Increment jackpotWins in DB
         triggerConfetti('jackpot-win', gameContainer); // Trigger confetti for jackpot
         triggerJackpotWordAnimation(gameContainer); // Trigger new jackpot word animation
-        
+
         await firebaseService.saveUserBalance(firebaseService.getUserBalance() + jackpotAmount); // Add jackpot to balance
         showFloatingWinNumbers(jackpotAmount, gameContainer); // Show floating numbers for jackpot
-        
+
         // Add the new jackpot animation class for the grid outline
         if (slotsGrid) {
             slotsGrid.classList.add('slot-machine-jackpot-win');
@@ -414,9 +420,9 @@ async function spinSlots() {
 
     // Only add totalPayout if it wasn't a malus win (malus handled separately)
     if (malusSymbolCount < 5) {
-        await firebaseService.saveUserBalance(firebaseService.getUserBalance() + totalPayout); 
+        await firebaseService.saveUserBalance(firebaseService.getUserBalance() + totalPayout);
     }
-    
+
     freeSpins += newFreeSpinsEarned;
 
     updateFreeSpinsDisplay();
@@ -425,9 +431,9 @@ async function spinSlots() {
 
     // Update gain text only if it wasn't a malus (malus has its own text)
     if (malusSymbolCount < 5) {
-        gainText.textContent = `Gain : ${totalPayout.toFixed(2)} €`; 
+        gainText.textContent = `Gain : ${totalPayout.toFixed(2)} €`;
     }
-    
+
     if (totalPayout > 0 || newFreeSpinsEarned > 0 || jackpotSymbolCount >= 5 || malusSymbolCount >= 5) { // Include malus win in animation check
         gainText.classList.add('win-animation');
 
@@ -569,8 +575,8 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
     });
 
     for (const symbol in symbolCounts) {
-        if (symbolCounts[symbol] >= 4) { 
-            totalPayout += betPerSpin * 0.25; 
+        if (symbolCounts[symbol] >= 4) {
+            totalPayout += betPerSpin * 0.25;
             // Optionally highlight all occurrences of this symbol
             finalSymbolsGrid.forEach((s, idx) => {
                 if (s === symbol) {
@@ -588,7 +594,7 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
             finalSymbolsGrid[reel + NUM_REELS * 2]   // Bottom row of this reel
         ];
         if (colSymbols[0] === colSymbols[1] && colSymbols[1] === colSymbols[2]) {
-            totalPayout += betPerSpin * 0.25; 
+            totalPayout += betPerSpin * 0.25;
             addWinningIndices([reel, reel + NUM_REELS, reel + NUM_REELS * 2]);
         }
     }
@@ -602,7 +608,7 @@ function calculatePayout(finalSymbolsGrid, betPerSpin) {
     ];
 
     if (diagonalSymbols[0] === diagonalSymbols[1] && diagonalSymbols[1] === diagonalSymbols[2]) {
-        totalPayout += betPerSpin * 0.1; 
+        totalPayout += betPerSpin * 0.1;
         addWinningIndices([0, 6, 12]);
     }
 
@@ -620,59 +626,53 @@ function getRandomSymbolByWeight(allowSpecialSymbols = false) {
     let totalWeight = 0;
 
     // Apply cosmetic bonuses/debuffs for individual symbol drop rates
-    const allAvailableCosmetics = firebaseService.getAllAvailableCosmetics();
-    const userOwnedCosmetics = firebaseService.getUserOwnedCosmetics(); // Get all owned cosmetic IDs
-    const activeCosmetics = firebaseService.getActiveCosmetics(); // Get active cosmetics, including accumulated values
+    const activeCosmetics = firebaseService.getActiveCosmetics();
+    console.log("getRandomSymbolByWeight: Cosmétiques actifs (pour la détermination du symbole):", activeCosmetics); // Debug log
 
     SYMBOLS.forEach(symbol => {
-        // Accumulate all bonuses/debuffs for this symbol from activeCosmetics
         // activeCosmetics for drop rate boosts/debuffs stores the NET effect for a symbol
-        const netDropRateEffect = activeCosmetics[symbol] || 0;
+        const netDropRateEffect = activeCosmetics[symbol] || 0; // If no active cosmetic, effect is 0
         currentSymbolWeights[symbol] = (currentSymbolWeights[symbol] || 0) + netDropRateEffect;
     });
+
+    console.log("getRandomSymbolByWeight: Poids des symboles après application des cosmétiques (avant vérification de la négativité):", currentSymbolWeights); // Debug log
 
     // Ensure weights don't become negative (cannot have a negative drop chance)
     for (const symbol in currentSymbolWeights) {
         if (currentSymbolWeights[symbol] < 0) {
             currentSymbolWeights[symbol] = 0;
         }
-        // Only include symbols that are allowed in the current spin mode
-        if (allowSpecialSymbols || (symbol !== '💯' && symbol !== '💣')) {
-            totalWeight += currentSymbolWeights[symbol];
-        }
     }
 
-    let weightedSymbols = [];
-    
     // Remove special symbols if not allowed, then re-normalize weights
     if (!allowSpecialSymbols) {
         delete currentSymbolWeights['💯']; // Removed jackpot symbol
         delete currentSymbolWeights['💣']; // Removed malus symbol
-        // Recalculate totalWeight if symbols were removed
-        totalWeight = 0;
-        for (const symbol in currentSymbolWeights) {
-            totalWeight += currentSymbolWeights[symbol];
-        }
     }
 
-    // Populate weightedSymbols array based on scaled weights
+    // Recalculate totalWeight based on allowed symbols and their modified weights
+    for (const symbol in currentSymbolWeights) {
+        totalWeight += currentSymbolWeights[symbol];
+    }
+
+    let weightedSymbols = [];
+
     if (totalWeight === 0) {
-        console.error("Total weight is zero after applying bonuses. Cannot select symbol. Defaulting to '❓'.");
-        // If totalWeight is 0, it means all allowed symbols have 0 weight.
-        // As a fallback, ensure we can still pick from non-special symbols if they exist.
+        console.error("getRandomSymbolByWeight: Le poids total est de zéro après l'application des bonus et le filtrage. Impossible de sélectionner le symbole. Retour à un symbole non spécial aléatoire.");
+        // Fallback: If totalWeight is 0, pick a random non-special symbol
         const nonSpecialSymbols = SYMBOLS.filter(s => s !== '💯' && s !== '💣');
         if (nonSpecialSymbols.length > 0) {
             return nonSpecialSymbols[Math.floor(Math.random() * nonSpecialSymbols.length)];
         }
-        return '❓';
+        return '❓'; // Final fallback if even non-special symbols fail
     }
 
 
     for (const symbol in currentSymbolWeights) {
         // Only add symbols that are allowed in the current spin mode and have a weight > 0
-        if (currentSymbolWeights[symbol] > 0 && (allowSpecialSymbols || (symbol !== '💯' && symbol !== '💣'))) {
+        if (currentSymbolWeights[symbol] > 0) {
              // Scale weights by 10000 for better granularity when dealing with small decimals
-            const count = Math.round((currentSymbolWeights[symbol] / totalWeight) * 10000); 
+            const count = Math.round((currentSymbolWeights[symbol] / totalWeight) * 10000);
             for (let i = 0; i < count; i++) {
                 weightedSymbols.push(symbol);
             }
@@ -680,7 +680,7 @@ function getRandomSymbolByWeight(allowSpecialSymbols = false) {
     }
 
     if (weightedSymbols.length === 0) {
-        console.error("Aucun symbole disponible pour la sélection pondérée ! Retour d'un symbole par défaut.");
+        console.error("getRandomSymbolByWeight: Aucun symbole disponible pour la sélection pondérée (après remplissage) ! Retour d'un symbole par défaut.");
         // Fallback if weightedSymbols still ends up empty (e.g., due to rounding or extreme debuffs)
         const nonSpecialSymbols = SYMBOLS.filter(s => s !== '💯' && s !== '💣');
         if (nonSpecialSymbols.length > 0) {
@@ -699,7 +699,7 @@ function getRandomSymbolByWeight(allowSpecialSymbols = false) {
 function updateSymbolStatsDisplay() {
     const symbolStatsGrid = document.querySelector('#symbol-stats-display .symbol-stats-grid');
     if (!symbolStatsGrid) {
-        console.warn("Symbol stats display grid not found.");
+        console.warn("updateSymbolStatsDisplay: La grille d'affichage des statistiques de symboles n'a pas été trouvée.");
         return;
     }
 
@@ -707,32 +707,37 @@ function updateSymbolStatsDisplay() {
 
     const allAvailableCosmetics = firebaseService.getAllAvailableCosmetics();
     const userOwnedCosmetics = firebaseService.getUserOwnedCosmetics();
-    const activeCosmetics = firebaseService.getActiveCosmetics(); // Get active cosmetics for net effect
+    const activeCosmetics = firebaseService.getActiveCosmetics(); // Contains the *net effect* value for drop rates
+    console.log("updateSymbolStatsDisplay: Cosmétiques actifs (pour l'affichage des statistiques):", activeCosmetics); // Debug log
+
 
     // Iterate over all symbols that can have a drop rate boost or debuff
-    const symbolsForStats = ['🍒', '🍊', '🔔', '💎', '7️⃣', 'BAR', '⭐', '💯', '💣']; 
+    // Filter out '❓' as it's a fallback, not a standard symbol for stats.
+    const symbolsForStats = SYMBOLS.filter(s => s !== '❓');
     const MAX_LEVEL = 5; // Assuming max level is 5 for both boosts and debuffs
 
     symbolsForStats.forEach(symbol => {
         let originalWeight = ORIGINAL_SYMBOL_WEIGHTS[symbol] || 0;
         let highestLevelOwned = 0;
-        let totalEffectValue = activeCosmetics[symbol] || 0; // Get the net effect directly from activeCosmetics
+        // Get the accumulated effect value directly from activeCosmetics
+        // This 'value' is the actual drop rate modifier (e.g., +0.01, -0.005)
+        let cosmeticEffectValue = 0; 
+        if (typeof activeCosmetics[symbol] === 'number') { // Ensure it's a numerical effect
+            cosmeticEffectValue = activeCosmetics[symbol];
+        }
 
-        // Determine if it's a bomb debuff or regular boost for display purposes
-        const isBombDebuff = symbol === '💣';
-
-        // Find the highest level of this specific cosmetic type owned for this symbol
+        // Find the highest level owned for this symbol's drop rate bonus/debuff type
         allAvailableCosmetics.forEach(cosmetic => {
-            if ((cosmetic.type === 'slot_symbol_drop_rate_bonus' || cosmetic.type === 'slot_bomb_drop_rate_debuff') && 
+            if ((cosmetic.type === 'slot_symbol_drop_rate_bonus' || cosmetic.type === 'slot_bomb_drop_rate_debuff') &&
                 cosmetic.symbol === symbol && userOwnedCosmetics.includes(cosmetic.id)) {
                 if (cosmetic.level > highestLevelOwned) {
                     highestLevelOwned = cosmetic.level;
                 }
             }
         });
-        
+
         // Calculate the current displayed drop rate
-        let currentDisplayedDropRate = originalWeight + totalEffectValue;
+        let currentDisplayedDropRate = originalWeight + cosmeticEffectValue;
         if (currentDisplayedDropRate < 0) currentDisplayedDropRate = 0; // Drop rate cannot be negative
 
         const statItem = document.createElement('div');
@@ -743,23 +748,65 @@ function updateSymbolStatsDisplay() {
             statItem.classList.add('max-level-glow');
         }
 
-        const percentageChange = (totalEffectValue * 100).toFixed(0);
-        const effectText = totalEffectValue >= 0 ? `+${percentageChange}%` : `${percentageChange}%`;
+        // Calculate the percentage change from the original weight
+        const percentageChange = (cosmeticEffectValue * 100); 
+        const effectText = percentageChange >= 0 ? `+${percentageChange.toFixed(0)}%` : `${percentageChange.toFixed(0)}%`;
+
 
         statItem.innerHTML = `
             <span class="symbol-icon">${symbol}</span>
             <span class="symbol-info">
-                Taux de drop actuel: ${(currentDisplayedDropRate * 100).toFixed(2)}%<br>
+                Taux de drop: ${(currentDisplayedDropRate * 100).toFixed(2)}%<br>
                 Niveau: ${highestLevelOwned} (${effectText})
             </span>
         `;
         symbolStatsGrid.appendChild(statItem);
+        console.log(`updateSymbolStatsDisplay: Symbole: ${symbol}, Poids Original: ${originalWeight}, Effet Cosmétique: ${cosmeticEffectValue}, Niveau le plus élevé possédé: ${highestLevelOwned}, Taux de drop affiché: ${currentDisplayedDropRate}`); // Debug log
     });
 }
 
+/**
+ * Applies cosmetic visual classes to the slot machine elements.
+ * This function is called by gameLogic.js when active cosmetics are updated.
+ * @param {Object} activeCosmeticsObject - The object containing active cosmetic types and their values.
+ */
+function applyActiveCosmeticsToSlot(activeCosmeticsObject) {
+    const slotsGrid = document.getElementById('slots-grid');
+    if (!slotsGrid) {
+        console.warn("SlotMachine: La grille de la machine à sous n'a pas été trouvée pour l'application des cosmétiques.");
+        return;
+    }
 
-// Removed updateSlotCosmeticVisuals function as it's no longer needed
+    // Clear all existing slot-related cosmetic classes first
+    const classesToRemove = Array.from(slotsGrid.classList).filter(cls =>
+        cls.startsWith('slot-theme-') ||
+        cls.startsWith('slot-symbols-') ||
+        cls.startsWith('slot-border-') ||
+        cls.startsWith('slot-win-effect-') ||
+        cls.startsWith('slot-spin-effect-')
+    );
+    classesToRemove.forEach(cls => slotsGrid.classList.remove(cls));
 
+    // Apply new classes based on active cosmetics
+    for (const type in activeCosmeticsObject) {
+        const value = activeCosmeticsObject[type];
+        // Only apply visual effects, not numerical drop rate modifiers
+        // We look for the cosmetic detail to determine its type and if it's a visual effect
+        const cosmeticDetails = firebaseService.getAllAvailableCosmetics().find(c => {
+            // Find by ID if 'type' in activeCosmeticsObject is an actual cosmetic ID (e.g., for themes)
+            if (c.id === type && (c.type === 'slot_theme' || c.type === 'slot_symbols' || c.type === 'slot_border' || c.type === 'slot_win_effect' || c.type === 'slot_spin_effect')) {
+                return true;
+            }
+            // If 'type' is a symbol (like '🍒'), it's a drop rate bonus/debuff, which shouldn't apply visual classes
+            return false;
+        });
+
+        if (cosmeticDetails) { // If it's a visual cosmetic
+            slotsGrid.classList.add(`${cosmeticDetails.type}-${value}`);
+        }
+    }
+    console.log("SlotMachine: Cosmétiques visuels actifs appliqués:", activeCosmeticsObject);
+}
 
 // --- CONFETTI FUNCTION ---
 function triggerConfetti(type, parentElement) {
@@ -797,7 +844,7 @@ function triggerConfetti(type, parentElement) {
         const colors = ['#f0f', '#0ff', '#ff0', '#0f0', '#f00', '#00f'];
         confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
         confetti.style.animationDelay = `${Math.random() * 0.5}s`;
-        confetti.style.animationDuration = `${Math.random() * 1.5 + 1.5}s`;
+        confetti.style.animationDuration = `${Math.random() * 1 + 2.5}s`;
 
         confettiContainer.appendChild(confetti);
     }
@@ -808,11 +855,6 @@ function triggerConfetti(type, parentElement) {
         }
     }, 3000); // Ensure this matches the longest confetti animation duration + delay
 }
-
-// --- FLOATING WIN NUMBERS FUNCTION ---
-// This function is now shared from gameLogic.js, renamed to showFloatingWinNumbers
-// and called directly from there. The version here is effectively deprecated.
-// Function triggerFloatingWinNumbers(amount, parentElement) was removed as it's now handled globally.
 
 // Utility function for custom message boxes (instead of alert/confirm)
 function showMessageBox(message, parentElement, type = 'info') {
@@ -915,3 +957,7 @@ function triggerMalusPhrase(parentElement) {
         malusWordContainer.remove();
     }, 3500); // Durée de l'animation du malus phrase + un peu de marge
 }
+
+// Expose these functions globally so gameLogic.js can call them.
+window.updateSlotSymbolStats = updateSymbolStatsDisplay;
+window.updateSlotCosmeticVisuals = applyActiveCosmeticsToSlot;

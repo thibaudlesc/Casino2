@@ -169,7 +169,7 @@ input[type="password"]:focus {
 /* Styles pour les nombres de gain flottants */
 .floating-win-number {
     position: absolute;
-    left: 0; /* CRUCIAL: Positionne l'élément au coin supérieur gauche du parent */
+    left: -100; /* CRUCIAL: Positionne l'élément au coin supérieur gauche du parent */
     top: 0;  /* CRUCIAL: Positionne l'élément au coin supérieur gauche du parent */
     font-size: 2.2em; /* Taille encore plus grande pour le pop */
     font-weight: bold;

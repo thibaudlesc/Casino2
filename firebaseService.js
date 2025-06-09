@@ -20,7 +20,7 @@ let activeCosmetics = {}; // Stocke les cosmétiques actuellement actifs (par ex
 let allAvailableCosmetics = []; // Stocke tous les cosmétiques chargés depuis Firestore
 let userGeneratedImages = []; // Nouveau : stocke les URLs des images générées par l'utilisateur
 
-const JACKPOT_INCREMENT_PER_SECOND = 5; // Incrément du jackpot par seconde
+const JACKPOT_INCREMENT_PER_SECOND = 20; // Incrément du jackpot par seconde
 const REWARD_COOLDOWN_MS = 3 * 60 * 60 * 1000; // 3 heures en millisecondes
 const MIN_REWARD = 500;
 const MAX_REWARD = 3000;
@@ -147,8 +147,9 @@ function setupFirebaseAuthListener() {
             await loadUserData(user.uid); // Charge le solde, le nom d'utilisateur, les cosmétiques actifs, maxBalance, jackpotWins, images générées
             await loadProgressiveJackpot();
             await loadRewardTimestamp();
-            await loadUserCosmetics(user.uid);
-            await loadAllCosmetics();
+            // Assurez-vous que loadAllCosmetics est appelé AVANT loadUserCosmetics
+            await loadAllCosmetics(); // Charge tous les cosmétiques disponibles en premier
+            await loadUserCosmetics(user.uid); // Puis charge les cosmétiques de l'utilisateur
             loadLeaderboard();
             if (onAuthStateChangedCallback) {
                 onAuthStateChangedCallback(user);
@@ -287,12 +288,8 @@ async function loadUserData(uid) {
             if (onJackpotWinsUpdatedCallback) {
                 onJackpotWinsUpdatedCallback(jackpotWins);
             }
-            if (onActiveCosmeticsUpdatedCallback) {
-                onActiveCosmeticsUpdatedCallback(activeCosmetics);
-            }
-            if (onUserImagesUpdatedCallback) {
-                onUserImagesUpdatedCallback(userGeneratedImages);
-            }
+            // onActiveCosmeticsUpdatedCallback et onUserImagesUpdatedCallback sont appelés par loadUserCosmetics qui est appelé après loadUserData.
+            // Donc, il n'est pas nécessaire de les appeler ici directement pour activeCosmetics et userGeneratedImages.
             console.log("FirebaseService: Données utilisateur chargées. Solde :", balance, "Solde Max :", maxBalance, "Jackpots remportés :", jackpotWins, "Cosmétiques actifs :", activeCosmetics, "Images générées :", userGeneratedImages.length);
         } else {
             console.log("FirebaseService: Aucune donnée utilisateur trouvée, création d'un nouveau profil utilisateur avec solde par défaut et cosmétiques actifs.");
@@ -325,12 +322,6 @@ async function loadUserData(uid) {
             if (onJackpotWinsUpdatedCallback) {
                 onJackpotWinsUpdatedCallback(jackpotWins);
             }
-            if (onActiveCosmeticsUpdatedCallback) {
-                onActiveCosmeticsUpdatedCallback(activeCosmetics);
-            }
-            if (onUserImagesUpdatedCallback) {
-                onUserImagesUpdatedCallback(userGeneratedImages);
-            }
         }
     } catch (error) {
         console.error("FirebaseService: Erreur lors du chargement ou de la création des données utilisateur :", error);
@@ -345,12 +336,6 @@ async function loadUserData(uid) {
         }
         if (onJackpotWinsUpdatedCallback) {
             onJackpotWinsUpdatedCallback(jackpotWins);
-        }
-        if (onActiveCosmeticsUpdatedCallback) {
-            onActiveCosmeticsUpdatedCallback(activeCosmetics);
-        }
-        if (onUserImagesUpdatedCallback) {
-            onUserImagesUpdatedCallback(userGeneratedImages);
         }
     }
 }
@@ -616,7 +601,8 @@ function getRewardConstants() {
         REWARD_COOLDOWN_MS: REWARD_COOLDOWN_MS,
         MIN_REWARD: MIN_REWARD,
         MAX_REWARD: MAX_REWARD,
-        lastRewardTimestamp: lastRewardTimestamp
+        lastRewardTimestamp: lastRewardTimestamp,
+        JACKPOT_INCREMENT_PER_SECOND: JACKPOT_INCREMENT_PER_SECOND // Include the new constant
     };
 }
 
@@ -661,7 +647,8 @@ async function loadAllCosmetics() {
 
 /**
  * Charge les cosmétiques possédés par l'utilisateur actuel depuis sa sous-collection 'userCosmetics'.
- * Pour slot_symbol_drop_rate_bonus et slot_bomb_drop_rate_debuff, il stocke le niveau le plus élevé possédé pour chacun.
+ * Pour slot_symbol_drop_rate_bonus et slot_bomb_drop_rate_debuff, il somme les
+ * valeurs de tous les niveaux possédés pour chaque symbole afin d'obtenir l'effet actif total.
  */
 async function loadUserCosmetics(uid) {
     if (!uid) {
@@ -672,28 +659,25 @@ async function loadUserCosmetics(uid) {
         console.log(`FirebaseService: Tentative de chargement des cosmétiques utilisateur pour l'UID : ${uid}`);
         const userCosmeticsSnapshot = await db.collection('users').doc(uid).collection('userCosmetics').get();
         
-        userCosmetics = [];
-        activeCosmetics = {}; // Réinitialiser pour éviter les doublons ou les états obsolètes
-
-        const ownedSymbolDropRates = {};
-        const ownedBombDropRates = {};
+        userCosmetics = []; // Stocke les ID de tous les cosmétiques possédés
+        activeCosmetics = {}; // Stocke l'effet actif (nom de classe ou valeur accumulée)
+        
+        const accumulatedDropRateEffects = {}; // Stocke la somme des effets de taux de drop pour la logique du jeu
 
         userCosmeticsSnapshot.docs.forEach(doc => {
             const data = doc.data();
             const cosmeticId = doc.id;
             
+            userCosmetics.push(cosmeticId); // Ajoute l'ID à la liste des cosmétiques possédés
+
             if (data.type === 'slot_symbol_drop_rate_bonus' || data.type === 'slot_bomb_drop_rate_debuff') {
-                if (!ownedSymbolDropRates[data.symbol] || data.level > ownedSymbolDropRates[data.symbol].level) {
-                    ownedSymbolDropRates[data.symbol] = {
-                        id: cosmeticId,
-                        level: data.level,
-                        value: data.value,
-                        type: data.type,
-                        name: data.name // Assurez-vous que le nom est là
-                    };
+                // Accumule l'effet du taux de drop pour la logique du jeu
+                if (!accumulatedDropRateEffects[data.symbol]) {
+                    accumulatedDropRateEffects[data.symbol] = 0;
                 }
+                accumulatedDropRateEffects[data.symbol] += (data.value || 0);
             } else {
-                userCosmetics.push(cosmeticId);
+                // Pour les autres types de cosmétiques, activez-les directement s'ils sont possédés
                 const cosmeticDetails = allAvailableCosmetics.find(c => c.id === cosmeticId);
                 if (cosmeticDetails) {
                     activeCosmetics[cosmeticDetails.type] = cosmeticDetails.value || cosmeticDetails.id;
@@ -701,22 +685,13 @@ async function loadUserCosmetics(uid) {
             }
         });
 
-        // Ajouter les bonus et les malus de taux de drop de niveau le plus élevé à la liste des cosmétiques possédés
-        // MODIFICATION: Appliquer la valeur du plus haut niveau comme remplacement, pas comme addition.
-        for (const symbol in ownedSymbolDropRates) {
-            const bonus = ownedSymbolDropRates[symbol];
-            userCosmetics.push(bonus.id); 
-            activeCosmetics[bonus.symbol] = bonus.value; // Remplace la valeur existante avec celle du plus haut niveau
+        // Après avoir parcouru tous les cosmétiques possédés, appliquez les effets de taux de drop cumulés
+        for (const symbol in accumulatedDropRateEffects) {
+            activeCosmetics[symbol] = accumulatedDropRateEffects[symbol];
         }
 
-        for (const symbol in ownedBombDropRates) {
-            const debuff = ownedBombDropRates[symbol];
-            userCosmetics.push(debuff.id); 
-            activeCosmetics[debuff.symbol] = debuff.value; // Remplace la valeur existante avec celle du plus haut niveau
-        }
-
-        console.log("FirebaseService: Cosmétiques possédés par l'utilisateur chargés :", userCosmetics);
-        console.log("FirebaseService: Bonus/malus de taux de drop actifs calculés :", activeCosmetics); 
+        console.log("FirebaseService: Cosmétiques possédés par l'utilisateur chargés (IDs) :", userCosmetics);
+        console.log("FirebaseService: Bonus/malus de taux de drop actifs calculés (accumulés pour la logique) :", activeCosmetics); 
         
         if (onUserCosmeticsUpdatedCallback) {
             onUserCosmeticsUpdatedCallback(userCosmetics);
@@ -724,11 +699,22 @@ async function loadUserCosmetics(uid) {
         if (onActiveCosmeticsUpdatedCallback) {
             onActiveCosmeticsUpdatedCallback(activeCosmetics);
         }
+        // Appeler le rappel pour les images générées ici car elles peuvent avoir été mises à jour avec les autres données
+        if (onUserImagesUpdatedCallback) {
+            onUserImagesUpdatedCallback(userGeneratedImages);
+        }
+
 
     } catch (error) {
         console.error("FirebaseService: Erreur lors du chargement des cosmétiques utilisateur :", error);
         if (onUserCosmeticsUpdatedCallback) {
             onUserCosmeticsUpdatedCallback([]);
+        }
+        if (onActiveCosmeticsUpdatedCallback) {
+            onActiveCosmeticsUpdatedCallback({}); // Assurez-vous que activeCosmetics est réinitialisé en cas d'erreur
+        }
+        if (onUserImagesUpdatedCallback) {
+            onUserImagesUpdatedCallback([]);
         }
     }
 }
@@ -763,7 +749,33 @@ async function purchaseCosmetic(cosmetic) {
     const userDocRef = db.collection('users').doc(currentUserId);
     const userCosmeticDocRef = userDocRef.collection('userCosmetics').doc(cosmetic.id);
 
+    let highestOwnedLevel = 0; // Initialiser en dehors de la transaction
+
     try {
+        // --- Récupérer le niveau le plus élevé AVANT la transaction ---
+        // Ceci est une solution si transaction.get(query) pose problème avec la version du SDK.
+        // NOTE : Cela introduit une condition de concurrence potentielle pour la vérification du niveau.
+        // Pour la production, assurez-vous que vos règles de sécurité Firebase atténuent cela
+        // ou utilisez les fonctions Cloud.
+        if (cosmetic.type === 'slot_symbol_drop_rate_bonus' || cosmetic.type === 'slot_bomb_drop_rate_debuff') {
+            const existingUserCosmeticsSnapshot = await db.collection('users').doc(currentUserId)
+                                                         .collection('userCosmetics')
+                                                         .where('symbol', '==', cosmetic.symbol)
+                                                         .get(); // Utilisation de .get() en dehors de la transaction
+            existingUserCosmeticsSnapshot.forEach(doc => {
+                const data = doc.data();
+                if ((data.type === 'slot_symbol_drop_rate_bonus' || data.type === 'slot_bomb_drop_rate_debuff') && data.level > highestOwnedLevel) {
+                    highestOwnedLevel = data.level;
+                }
+            });
+        } else {
+            // Pour les cosmétiques non basés sur le niveau, vérifiez s'ils sont déjà possédés AVANT la transaction
+            if (userCosmetics.includes(cosmetic.id)) {
+                return { success: false, error: { message: "Vous possédez déjà cet article." } };
+            }
+        }
+
+        // --- Démarrer la transaction ---
         await db.runTransaction(async (transaction) => {
             const userDoc = await transaction.get(userDocRef);
             if (!userDoc.exists) {
@@ -775,20 +787,15 @@ async function purchaseCosmetic(cosmetic) {
                 throw new Error("Solde insuffisant.");
             }
 
+            // --- Re-vérifier le niveau à l'intérieur de la transaction, mais en utilisant le highestOwnedLevel pré-récupéré ---
+            // Cette nouvelle vérification est principalement pour l'intégrité, mais la valeur de highestOwnedLevel
+            // provient d'avant la transaction.
             if (cosmetic.type === 'slot_symbol_drop_rate_bonus' || cosmetic.type === 'slot_bomb_drop_rate_debuff') {
-                const ownedCosmeticsForSymbol = allAvailableCosmetics.filter(c => 
-                    c.type === cosmetic.type && c.symbol === cosmetic.symbol && userCosmetics.includes(c.id)
-                );
-                const highestOwnedLevel = ownedCosmeticsForSymbol.reduce((maxLevel, c) => Math.max(maxLevel, c.level), 0);
-
-                if (cosmetic.level && cosmetic.level > highestOwnedLevel + 1) {
+                if (cosmetic.level && cosmetic.level !== (highestOwnedLevel + 1)) {
                     throw new Error(`Vous devez acheter le niveau ${highestOwnedLevel + 1} avant celui-ci.`);
                 }
-            } else {
-                if (userCosmetics.includes(cosmetic.id)) {
-                    throw new Error("Vous possédez déjà cet article.");
-                }
             }
+            // La vérification de la possession pour les cosmétiques non basés sur le niveau est maintenant effectuée en dehors de la transaction.
 
             transaction.update(userDocRef, { balance: currentBalance - cosmetic.price });
             transaction.set(userCosmeticDocRef, {
@@ -801,27 +808,17 @@ async function purchaseCosmetic(cosmetic) {
             });
         });
 
+        // Met à jour le solde local
         balance -= cosmetic.price;
-        userCosmetics.push(cosmetic.id);
-        
-        // MODIFICATION: Mettre à jour activeCosmetics en remplaçant la valeur pour les types de taux de drop.
-        if (cosmetic.type === 'slot_symbol_drop_rate_bonus' || cosmetic.type === 'slot_bomb_drop_rate_debuff') {
-            activeCosmetics[cosmetic.symbol] = cosmetic.value; // Remplace la valeur existante avec celle du nouveau niveau
-            console.log(`FirebaseService: Boost de taux de drop ${cosmetic.type === 'slot_bomb_drop_rate_debuff' ? 'malus' : 'bonus'} activé pour ${cosmetic.symbol}. Nouvelle valeur : ${activeCosmetics[cosmetic.symbol]}`);
-        } else {
-            activeCosmetics[cosmetic.type] = cosmetic.value || cosmetic.id;
-        }
-
         if (onBalanceUpdatedCallback) {
             onBalanceUpdatedCallback(balance);
         }
-        if (onUserCosmeticsUpdatedCallback) {
-            onUserCosmeticsUpdatedCallback(userCosmetics);
-        }
-        if (onActiveCosmeticsUpdatedCallback) {
-            onActiveCosmeticsUpdatedCallback(activeCosmetics);
-        }
-        console.log(`FirebaseService: Cosmétique ${cosmetic.name} acheté. Nouveau solde : ${balance}`);
+
+        // Après un achat réussi, recharge les cosmétiques de l'utilisateur pour s'assurer que activeCosmetics est recalculé correctement
+        // Cela déclenchera onUserCosmeticsUpdatedCallback et onActiveCosmeticsUpdatedCallback
+        await loadUserCosmetics(currentUserId); 
+
+        console.log(`FirebaseService: Cosmétique ${cosmetic.name} acheté. Nouveau solde : ${balance}. Rechargement des cosmétiques.`);
         return { success: true };
     } catch (error) {
         console.error("FirebaseService: Erreur lors de l'achat du cosmétique :", error);
@@ -894,7 +891,7 @@ async function deactivateCosmetic(cosmeticId) {
 
     const cosmeticToDeactivate = allAvailableCosmetics.find(c => c.id === cosmeticId);
     if (!cosmeticToDeactivate) {
-        return { success: false, error: { message: "Cosmétique introuvable pour la désactivation." } };
+        return { success: false, error: { message: "Cosmétique introuvable pour la désactivation." } }; 
     }
 
     if (cosmeticToDeactivate.type === 'slot_symbol_drop_rate_bonus' || cosmeticToDeactivate.type === 'slot_bomb_drop_rate_debuff') {

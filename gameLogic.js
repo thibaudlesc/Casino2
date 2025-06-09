@@ -13,6 +13,12 @@ const currencyFormatter = new Intl.NumberFormat('fr-FR', {
     maximumFractionDigits: 2
 });
 
+// Nouveau formateur spécifique pour le jackpot (pas de décimales)
+const jackpotFormatter = new Intl.NumberFormat('fr-FR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     setupAuthUIListeners(); // Configure les écouteurs pour l'interface utilisateur d'authentification
     setupGameMenuListeners(); // Configure les écouteurs pour la sélection du jeu
@@ -125,13 +131,17 @@ function handleUserCosmeticsUpdated(cosmetics) {
  */
 function handleActiveCosmeticsUpdated(activeCosmetics) {
     console.log("GameLogic: Cosmétiques actifs mis à jour :", activeCosmetics);
-    applyActiveCosmetics(activeCosmetics);
+    applyActiveCosmetics(activeCosmetics); // Applique les classes CSS générales sur le body
     if (currentGame === 'shop') {
         console.log("GameLogic: La boutique est active, réaffichage de la boutique après la mise à jour des cosmétiques actifs.");
         initShop(updateBalanceDisplay, showFloatingWinNumbers, currencyFormatter, firebaseService.getAllAvailableCosmetics());
     } else if (currentGame === 'slot') {
-        if (typeof updateSlotCosmeticVisuals === 'function') {
-            updateSlotCosmeticVisuals(activeCosmetics);
+        // Appeler les fonctions spécifiques de la machine à sous pour les visuels et les statistiques
+        if (typeof window.updateSlotCosmeticVisuals === 'function') {
+            window.updateSlotCosmeticVisuals(activeCosmetics);
+        }
+        if (typeof window.updateSlotSymbolStats === 'function') {
+            window.updateSlotSymbolStats(); // Mettre à jour les statistiques des symboles
         }
     }
 }
@@ -157,7 +167,7 @@ function handleUserGeneratedImagesUpdated(images) {
     console.log("GameLogic: Images générées par l'utilisateur mises à jour :", images);
     // Si la modale est ouverte et affiche les détails de l'utilisateur actuel, la rafraîchir.
     const modal = document.getElementById('player-details-modal');
-    if (modal && modal.style.display === 'flex' && modal.querySelector('#modal-player-username').textContent === firebaseService.getCurrentUsername()) {
+    if (modal && modal.style.display === 'flex' && modal.querySelector('#modal-player-username').textContent === firebaseService.getCurrentUserId()) {
         showPlayerDetails(firebaseService.getCurrentUserId());
     }
 }
@@ -330,6 +340,7 @@ async function handleForgotPassword() {
  * Gère la déconnexion de l'utilisateur.
  */
 async function logout() {
+    console.log("GameLogic: Déconnexion de l'utilisateur.");
     await firebaseService.logoutUser();
 }
 
@@ -350,7 +361,7 @@ function displayGameSelectionMenu() {
 
             <!-- Jackpot here -->
             <div id="progressive-jackpot-container">
-                <p>JACKPOT : <span id="progressive-jackpot-display">${currencyFormatter.format(firebaseService.getProgressiveJackpot())}</span> €</p>
+                <p>JACKPOT : <span id="progressive-jackpot-display">${jackpotFormatter.format(firebaseService.getProgressiveJackpot())}</span> €</p>
             </div>
             <h1>Choisissez votre jeu</h1>
             <div class="game-buttons">
@@ -389,7 +400,7 @@ function displayGameSelectionMenu() {
     updateBalanceDisplay(firebaseService.getUserBalance());
     updateMaxBalanceDisplay(firebaseService.getUserMaxBalance());
     updateJackpotWinsDisplay(firebaseService.getUserJackpotWins());
-    updateProgressiveJackpotDisplay(firebaseService.getUserProgressiveJackpot());
+    updateProgressiveJackpotDisplay(firebaseService.getProgressiveJackpot()); // Corrected line
     firebaseService.loadLeaderboard();
     console.log("GameLogic: HTML pour le menu principal ré-affiché. Élément d'affichage du jackpot (après rendu) :", document.getElementById('progressive-jackpot-display'));
 }
@@ -532,7 +543,7 @@ function startBlackjack() {
                     <input type="number" id="blackjack-bet-amount" value="10" min="1" step="1">
                 </div>
                 <div class="blackjack-actions">
-                    <button id="blackjack-deal-button" class="game-button">Distribuer</button>
+                    <button id="blackjack-deal-button" class="game-button" disabled>Distribuer</button>
                     <button id="blackjack-hit-button" class="game-button" disabled>Tirer</button>
                     <button id="blackjack-stand-button" class="game-button" disabled>Rester</button>
                     <button id="blackjack-double-button" class="game-button" disabled>Doubler</button>
@@ -667,7 +678,7 @@ function updateProgressiveJackpotDisplay(newJackpot) {
     console.log("GameLogic: Mise à jour de l'affichage du jackpot. Nouveau jackpot :", newJackpot, "Élément trouvé :", !!jackpotDisplayElement);
 
     if (jackpotDisplayElement) {
-        jackpotDisplayElement.textContent = currencyFormatter.format(newJackpot);
+        jackpotDisplayElement.textContent = jackpotFormatter.format(newJackpot); // Utilise jackpotFormatter ici
     } else {
         console.warn("GameLogic: Élément d'affichage du jackpot non trouvé (progressive-jackpot-display). Ceci est normal si vous n'êtes pas dans le menu principal ou les vues de jeu où il est affiché.");
     }
@@ -685,17 +696,28 @@ function updateProgressiveJackpotDisplay(newJackpot) {
  * Démarre l'intervalle pour l'incrémentation du jackpot progressif.
  */
 function startJackpotIncrement() {
+    console.log("GameLogic: Appel de startJackpotIncrement().");
     if (progressiveJackpotInterval) {
+        console.log("GameLogic: Nettoyage de l'intervalle de jackpot existant :", progressiveJackpotInterval);
         clearInterval(progressiveJackpotInterval);
     }
+    const updateIntervalMs = 10; // Update every 20 milliseconds for even smoother animation
+    const fullSecondIncrement = firebaseService.getRewardConstants().JACKPOT_INCREMENT_PER_SECOND || 2;
+    // Calculate the increment amount per updateIntervalMs
+    const incrementPerUpdate = fullSecondIncrement / (1000 / updateIntervalMs);
+
     progressiveJackpotInterval = setInterval(async () => {
-        const incrementAmount = firebaseService.getRewardConstants().JACKPOT_INCREMENT_PER_SECOND || 2;
-        firebaseService.incrementProgressiveJackpot(incrementAmount);
+        // console.log("GameLogic: L'intervalle de jackpot se déclenche. ID :", progressiveJackpotInterval); // Too verbose for frequent updates
+        firebaseService.incrementProgressiveJackpot(incrementPerUpdate);
         updateProgressiveJackpotDisplay(firebaseService.getProgressiveJackpot());
-        if (Date.now() % 10000 < 1000) {
+
+        // Save to Firestore less frequently, e.g., every 10 seconds, to reduce writes
+        if (Date.now() % 10000 < updateIntervalMs) { // Check approximately every 10 seconds
+            console.log("GameLogic: Sauvegarde périodique du jackpot dans Firestore.");
             await firebaseService.saveProgressiveJackpot(firebaseService.getProgressiveJackpot());
         }
-    }, 1000);
+    }, updateIntervalMs);
+    console.log("GameLogic: Intervalle de jackpot démarré avec l'ID :", progressiveJackpotInterval);
 }
 
 /**
@@ -703,6 +725,7 @@ function startJackpotIncrement() {
  */
 function stopJackpotIncrement() {
     if (progressiveJackpotInterval) {
+        console.log("GameLogic: Arrêt de l'intervalle de jackpot :", progressiveJackpotInterval);
         clearInterval(progressiveJackpotInterval);
         progressiveJackpotInterval = null;
     }
@@ -1149,4 +1172,3 @@ window.startChickenGame = startChickenGame;
 window.startShop = startShop;
 window.showMainMenu = showMainMenu;
 window.collectFreeReward = collectFreeReward;
-

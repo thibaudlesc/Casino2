@@ -1,0 +1,155 @@
+/* scratchCard.css */
+
+#scratch-card-game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 90%;
+    margin: 20px auto;
+    box-sizing: border-box;
+}
+
+#scratch-card-game-container h2 {
+    color: #00bfa5;
+    margin-bottom: 10px;
+}
+
+#scratch-card-message {
+    font-size: 1.1em;
+    font-weight: bold;
+    min-height: 25px; /* Prevent layout shift */
+}
+
+.scratch-card-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.scratch-card-controls .bet-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 8px 15px;
+    border-radius: 8px;
+}
+
+#scratch-card-price-display {
+    font-weight: bold;
+    color: #f0f0f0;
+}
+
+#scratch-card-buy-button {
+    background-color: #5cb85c;
+    box-shadow: 0 4px 15px rgba(92, 184, 92, 0.4);
+}
+#scratch-card-buy-button:hover:not(:disabled) {
+    background-color: #4cae4c;
+}
+
+#scratch-card-reset-button {
+    background-color: #f0ad4e;
+    box-shadow: 0 4px 15px rgba(240, 173, 78, 0.4);
+}
+#scratch-card-reset-button:hover:not(:disabled) {
+    background-color: #ec971f;
+}
+
+
+/* Scratch Card Grid */
+#scratch-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3x3 grid for values */
+    grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
+    width: 90%;
+    max-width: 300px;
+    aspect-ratio: 1 / 1; /* Keep it square */
+    background-color: #1a1a2e; /* Dark background for values */
+    border-radius: 10px;
+    padding: 10px;
+    position: relative; /* For canvas overlay */
+}
+
+.scratch-card-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #fff; /* White for hidden numbers initially */
+    background-color: #3e3e60; /* Placeholder background */
+    border-radius: 8px;
+    cursor: default; /* No direct interaction */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    position: relative; /* For result visibility */
+    overflow: hidden; /* To hide values under coating */
+}
+
+/* Styles for the scratchable coating (canvas) */
+.scratch-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    background-color: transparent; /* Initially clear to see the card underneath */
+    z-index: 2; /* Above the scratch-card-cell content */
+    touch-action: none; /* Prevent scrolling/zooming on canvas interaction */
+}
+
+.scratch-value {
+    visibility: hidden; /* Hidden until revealed */
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    color: #FFD700; /* Gold color for values */
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+}
+
+.scratch-value.revealed {
+    visibility: visible;
+    opacity: 1;
+}
+
+.match-highlight {
+    background-color: rgba(0, 255, 0, 0.3); /* Green highlight for matched numbers */
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+    border: 2px solid #00ffaa;
+    transition: background-color 0.5s ease, box-shadow 0.5s ease;
+}
+
+/* Win/Loss text specific for scratch card */
+.scratch-card-message.win-text {
+    color: #00ffaa;
+}
+
+.scratch-card-message.loss-text {
+    color: #ff6b6b;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    #scratch-card-grid {
+        gap: 8px;
+    }
+    .scratch-card-cell {
+        font-size: 1.2em;
+    }
+    .scratch-card-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

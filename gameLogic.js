@@ -368,6 +368,7 @@ function displayGameSelectionMenu() {
                 <button class="game-button" onclick="startSlotMachine()">Machines à Sous</button>
                 <button class="game-button" onclick="startBlackjack()">Blackjack</button>
                 <button class="game-button" onclick="startChickenGame()">Jeu du Poulet</button>
+                <button class="game-button" onclick="startScratchCard()">Ticket à Gratter</button> <!-- Nouveau bouton pour le jeu de grattage -->
                 <button class="game-button" onclick="startShop()">Boutique</button>
                 <button id="free-reward-button" class="game-button free-reward-button">Récompense Gratuite</button>
             </div>
@@ -391,6 +392,7 @@ function displayGameSelectionMenu() {
         <div id="slot-machine-container" style="display:none;"></div>
         <div id="blackjack-container" style="display:none;"></div>
         <div id="chicken-game-container" style="display:none;"></div>
+        <div id="scratch-card-game-container" style="display:none;"></div> <!-- Nouveau conteneur pour le jeu de grattage -->
         <div id="shop-container" style="display:none;"></div> 
 
         <button id="back-to-menu" class="game-button" style="display:none; margin-top: 20px;" onclick="showMainMenu()">Retour au Menu</button>
@@ -439,6 +441,8 @@ function setupGameMenuListeners() {
                     startBlackjack();
                 } else if (event.target.textContent.includes('Jeu du Poulet')) {
                     startChickenGame();
+                } else if (event.target.textContent.includes('Ticket à Gratter')) { // Nouveau cas pour le jeu de grattage
+                    startScratchCard();
                 } else if (event.target.textContent.includes('Boutique')) {
                     startShop();
                 } else if (event.target.id === 'free-reward-button') {
@@ -477,6 +481,8 @@ function hideAllGameContainersAndMenu() {
     if (blackjackContainer) blackjackContainer.style.display = 'none';
     const chickenContainer = document.getElementById('chicken-game-container');
     if (chickenContainer) chickenContainer.style.display = 'none';
+    const scratchCardContainer = document.getElementById('scratch-card-game-container'); // Nouveau conteneur à masquer
+    if (scratchCardContainer) scratchCardContainer.style.display = 'none';
     const shopContainer = document.getElementById('shop-container'); 
     if (shopContainer) shopContainer.style.display = 'none';
 
@@ -534,7 +540,7 @@ function startBlackjack() {
             <h3>Joueur (<span id="player-score">0</span>)</h3>
             <div id="player-hand" class="blackjack-hand"></div>
 
-            <p id="blackjack-message" class="blackjack-result">Placez votre mise pour commencer !</p>
+            <p id="blackjack-message" class="blackjack-result">Placez votre mise et cliquez sur Distribuer !</p>
             <p id="blackjack-current-bet">Mise actuelle : 0 €</p>
 
             <div id="blackjack-controls">
@@ -602,6 +608,48 @@ function startChickenGame() {
     chickenContainer.style.display = 'block';
     updateBalanceDisplay(firebaseService.getUserBalance());
 }
+
+/**
+ * Démarre le jeu de Ticket à Gratter.
+ */
+function startScratchCard() {
+    currentGame = 'scratchCard';
+    hideAllGameContainersAndMenu();
+
+    const scratchCardContainer = document.getElementById('scratch-card-game-container');
+    if (!scratchCardContainer.innerHTML.trim()) {
+        scratchCardContainer.innerHTML = `
+            <h2>🎟️ TICKET À GRATTER 🎟️</h2>
+            <p>Solde : <span id="current-balance">${currencyFormatter.format(firebaseService.getUserBalance())}</span> €</p>
+            <div id="scratch-card-game-area">
+                <h2>MAINTENANCE</h2>
+                <p id="scratch-card-message" class="scratch-card-message">Achetez un ticket pour commencer !</p>
+
+                <div class="scratch-card-controls">
+                    <div class="bet-controls">
+                        <label for="scratch-card-price-select">Prix du ticket : </label>
+                        <select id="scratch-card-price-select">
+                        </select>
+                        <span id="scratch-card-price-display"></span>
+                    </div>
+                    <button id="scratch-card-buy-button" class="game-button">Acheter Ticket</button>
+                    <button id="scratch-card-reset-button" class="game-button" disabled>Réinitialiser</button>
+                </div>
+                
+                <div id="scratch-card-grid">
+                    <!-- Les cellules du ticket à gratter seront rendues ici -->
+                </div>
+            </div>
+            <button id="back-to-menu-scratch-card" class="game-button" style="margin-top: 20px;">Retour au Menu</button>
+        `;
+        initScratchCard(); // Initialize the scratch card game logic
+        document.getElementById('back-to-menu-scratch-card').addEventListener('click', showMainMenu);
+    }
+    scratchCardContainer.style.display = 'block';
+    updateBalanceDisplay(firebaseService.getUserBalance());
+    console.log("GameLogic: Conteneur Ticket à Gratter affiché et initScratchCard() appelé.");
+}
+
 
 
 /**
@@ -1169,6 +1217,7 @@ window.incrementUserJackpotWins = firebaseService.incrementUserJackpotWins; // E
 window.startSlotMachine = startSlotMachine;
 window.startBlackjack = startBlackjack;
 window.startChickenGame = startChickenGame;
+window.startScratchCard = startScratchCard; // Expose la fonction pour le jeu de grattage
 window.startShop = startShop;
 window.showMainMenu = showMainMenu;
 window.collectFreeReward = collectFreeReward;

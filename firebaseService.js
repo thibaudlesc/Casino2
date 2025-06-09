@@ -524,6 +524,7 @@ async function loadLeaderboard() {
     }
 }
 
+
 /**
  * Charge l'horodatage de la dernière récompense du document Firestore de l'utilisateur.
  */

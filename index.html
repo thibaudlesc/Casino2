@@ -9,6 +9,11 @@
     <link rel="stylesheet" href="blackjack.css">
     <link rel="stylesheet" href="chicken.css">
     <link rel="stylesheet" href="shop.css">
+    <!-- Nouveau fichier CSS pour le jeu de grattage -->
+    <link rel="stylesheet" href="scratchCard.css">
+    <!-- Google AdSense Script -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7274556202824186"
+            crossorigin="anonymous"></script>
     <style>
         /* Styles pour la page de connexion */
         #auth-container {
@@ -356,57 +361,105 @@
         Votre navigateur ne supporte pas l'élément audio.
     </audio>
 
-    <div class="container">
-        <div id="auth-container">
-            <h2>Bienvenue au JEWBUZZ PRIME CASINO !</h2>
-            <p id="auth-prompt-message">Veuillez choisir une option :</p>
-            <div id="initial-auth-options" style="display:flex; flex-direction: column; gap: 15px;">
-                <button id="show-login-form" class="game-button">Se connecter</button>
-                <button id="show-register-form" class="game-button">S'inscrire</button>
-            </div>
-
-            <div id="login-form" style="display:none; flex-direction: column; gap: 15px;">
-                <input type="email" id="email-input" placeholder="Email">
-                <input type="password" id="password-input" placeholder="Mot de passe">
-                <button id="login-button" class="game-button">Se connecter</button>
-                <button id="forgot-password-button" class="game-button">Mot de passe oublié ?</button>
-                <button id="back-to-auth-options" class="game-button">Retour</button>
-            </div>
-
-            <div id="register-form" style="display:none; flex-direction: column; gap: 15px;">
-                <input type="text" id="username-input" placeholder="Nom d'utilisateur">
-                <input type="email" id="register-email-input" placeholder="Email">
-                <input type="password" id="register-password-input" placeholder="Mot de passe">
-                <button id="create-account-button" class="game-button">Créer un compte</button>
-                <button id="back-to-auth-options-register" class="game-button">Retour</button>
-            </div>
-
-            <p id="auth-message"></p>
+    <div class="site-wrapper"> <!-- Nouveau wrapper pour la mise en page globale du site -->
+        <!-- Bloc d'annonces Gauche -->
+        <div class="ad-container left-ad">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-7274556202824186"
+                 data-ad-slot="YOUR_LEFT_AD_SLOT_ID_HERE"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
         </div>
 
-        <div id="game-container" style="display:none;">
-            <!-- Le contenu sera chargé dynamiquement ici par gameLogic.js -->
-            <!-- Le shop-container est initialement caché et sera affiché par gameLogic.js quand startShop est appelé -->
-            <div id="shop-container" style="display:none;"></div>
-        </div>
-    </div>
+        <div class="central-content-area">
+            <!-- Bloc d'annonces Haut -->
+            <div class="ad-container top-ad">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-7274556202824186"
+                     data-ad-slot="YOUR_TOP_AD_SLOT_ID_HERE"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            </div>
 
-    <!-- Modal pour les informations du joueur -->
-    <div id="player-details-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h3 id="modal-player-username"></h3>
-            <p>Solde actuel : <span id="modal-player-balance"></span> €</p>
-            <p>Solde le plus haut : <span id="modal-player-max-balance"></span> €</p>
-            <p>Jackpots remportés : <span id="modal-player-jackpot-wins"></span></p>
+            <div class="container">
+                <div id="auth-container">
+                    <h2>Bienvenue au JEWBUZZ PRIME CASINO !</h2>
+                    <p id="auth-prompt-message">Veuillez choisir une option :</p>
+                    <div id="initial-auth-options" style="display:flex; flex-direction: column; gap: 15px;">
+                        <button id="show-login-form" class="game-button">Se connecter</button>
+                        <button id="show-register-form" class="game-button">S'inscrire</button>
+                    </div>
 
-            <!-- Nouvelle section pour les images générées (trophées) -->
-            <div id="modal-player-generated-images-section">
-                <h4>Trophées d'images générés :</h4>
-                <div id="modal-player-generated-images-grid">
-                    <!-- Les images générées seront insérées ici -->
+                    <div id="login-form" style="display:none; flex-direction: column; gap: 15px;">
+                        <input type="email" id="email-input" placeholder="Email">
+                        <input type="password" id="password-input" placeholder="Mot de passe">
+                        <button id="login-button" class="game-button">Se connecter</button>
+                        <button id="forgot-password-button" class="game-button">Mot de passe oublié ?</button>
+                        <button id="back-to-auth-options" class="game-button">Retour</button>
+                    </div>
+
+                    <div id="register-form" style="display:none; flex-direction: column; gap: 15px;">
+                        <input type="text" id="username-input" placeholder="Nom d'utilisateur">
+                        <input type="email" id="register-email-input" placeholder="Email">
+                        <input type="password" id="register-password-input" placeholder="Mot de passe">
+                        <button id="create-account-button" class="game-button">Créer un compte</button>
+                        <button id="back-to-auth-options-register" class="game-button">Retour</button>
+                    </div>
+
+                    <p id="auth-message"></p>
+                </div>
+
+                <div id="game-container" style="display:none;">
+                    <!-- Le contenu sera chargé dynamiquement ici par gameLogic.js -->
+                    <!-- Le shop-container est initialement caché et sera affiché par gameLogic.js quand startShop est appelé -->
+                    <div id="shop-container" style="display:none;"></div>
                 </div>
             </div>
+
+            <!-- Modal pour les informations du joueur -->
+            <div id="player-details-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close-button">&times;</span>
+                    <h3 id="modal-player-username"></h3>
+                    <p>Solde actuel : <span id="modal-player-balance"></span> €</p>
+                    <p>Solde le plus haut : <span id="modal-player-max-balance"></span> €</p>
+                    <p>Jackpots remportés : <span id="modal-player-jackpot-wins"></span></p>
+
+                    <!-- Nouvelle section pour les images générées (trophées) -->
+                    <div id="modal-player-generated-images-section">
+                        <h4>Trophées d'images générés :</h4>
+                        <div id="modal-player-generated-images-grid">
+                            <!-- Les images générées seront insérées ici -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bloc d'annonces Bas -->
+            <div class="ad-container bottom-ad">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-7274556202824186"
+                     data-ad-slot="YOUR_BOTTOM_AD_SLOT_ID_HERE"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            </div>
+        </div>
+
+        <!-- Bloc d'annonces Droit -->
+        <div class="ad-container right-ad">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-7274556202824186"
+                 data-ad-slot="YOUR_RIGHT_AD_SLOT_ID_HERE"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
         </div>
     </div>
 
@@ -446,13 +499,15 @@
     <script src="blackjack.js"></script>
     <script src="chicken.js"></script>
     <script src="shop.js"></script>
+    <!-- Nouveau script pour le jeu de grattage -->
+    <script src="scratchCard.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const musicPlayer = document.getElementById('background-music-playlist');
 
             // Set the volume to 4% (0.04)
-            musicPlayer.volume = 0.05;
+            musicPlayer.volume = 0.005;
 
             // Attempt to play muted audio on page load.
             // This is generally allowed by browsers.

@@ -6,20 +6,38 @@
 
 
 /* General Body and Layout */
-/* General Body and Layout */
 body {
     font-family: 'Inter', sans-serif; /* Changed from Montserrat */
     /* Subtler background gradient for a more refined look */
     background: linear-gradient(to right, #34495e, #2c3e50); /* Darker, less saturated blue/grey */
     color: #f5f5f5; /* Slightly softer white for text */
-    display: flex;
-    flex-direction: column; /* Changed to column to allow content stacking */
-    justify-content: flex-start; /* Align content to the start, not center */
-    align-items: center;
+    display: flex; /* Make body a flex container */
+    justify-content: center; /* Center the main content area */
+    align-items: flex-start; /* Align items to the top to prevent ads from stretching */
     min-height: 100vh;
     margin: 0;
     overflow-y: auto; /* Allow vertical scrolling */
     overflow-x: hidden; /* Hide horizontal overflow */
+}
+
+.site-wrapper { /* Nouveau wrapper pour la mise en page globale du site */
+    display: flex;
+    justify-content: center; /* Centrer la zone de contenu centrale */
+    align-items: flex-start; /* Aligner les éléments en haut */
+    width: 100%;
+    max-width: 1400px; /* Permettre plus d'espace pour les publicités latérales */
+    margin: 20px auto; /* Centrer le wrapper avec une marge */
+    box-sizing: border-box;
+    padding: 0 10px; /* Ajouter un peu de padding sur les côtés */
+}
+
+.central-content-area {
+    display: flex;
+    flex-direction: column; /* Empiler le conteneur et les publicités haut/bas verticalement */
+    align-items: center; /* Centrer les éléments horizontalement dans cette colonne */
+    flex-grow: 1; /* Permettre au contenu central de prendre l'espace disponible */
+    max-width: 800px; /* Limiter la largeur du contenu */
+    margin: 0 20px; /* Ajouter une marge horizontale entre le contenu central et les publicités latérales */
 }
 
 .container {
@@ -31,7 +49,7 @@ body {
     text-align: center;
     max-width: 800px;
     width: 90%; /* Responsive width */
-    margin: 20px auto; /* Center with margin */
+    margin: 0 auto; /* Supprimer les marges haut/bas, laisser central-content-area les gérer */
     box-sizing: border-box; /* Include padding in width */
 }
 
@@ -460,5 +478,72 @@ input[type="password"]:focus {
     to {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Styles pour les conteneurs de publicités */
+.ad-container {
+    background-color: rgba(0, 0, 0, 0.15); /* Arrière-plan légèrement plus foncé pour les publicités */
+    padding: 10px;
+    border-radius: 8px;
+    margin: 10px 0; /* Marge verticale par défaut */
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex; /* Faire de cela un conteneur flex pour centrer l'unité publicitaire */
+    justify-content: center;
+    align-items: center;
+    min-height: 100px; /* Donner une hauteur minimale pour les publicités même si elles ne sont pas chargées */
+}
+
+/* Styles spécifiques pour les publicités latérales */
+.left-ad, .right-ad {
+    flex-shrink: 0;
+    width: 160px; /* Largeur fixe pour les publicités type gratte-ciel */
+    max-width: 160px; /* Largeur maximale pour les publicités latérales */
+    min-width: 120px; /* S'assurer qu'elles ne sont pas trop petites sur les grands écrans */
+    margin: 0 10px; /* Ajouter une marge horizontale */
+}
+
+/* Styles spécifiques pour les publicités haut/bas à l'intérieur du contenu central */
+.top-ad, .bottom-ad {
+    width: 100%; /* Pleine largeur pour les publicités haut/bas à l'intérieur du wrapper de contenu principal */
+    margin-bottom: 20px; /* Marge sous la publicité supérieure */
+    margin-top: 20px; /* Marge au-dessus de la publicité inférieure */
+}
+
+/* Masquer les publicités latérales sur les écrans plus petits (tablettes et mobiles) */
+@media (max-width: 1024px) {
+    .site-wrapper {
+        flex-direction: column; /* Empiler les publicités latérales verticalement */
+        align-items: center; /* Centrer les éléments empilés */
+        padding: 0;
+        margin: 10px auto; /* Ajuster la marge globale du wrapper */
+    }
+    .left-ad, .right-ad {
+        width: 320px; /* Permettre un bloc publicitaire horizontal plus large sur les écrans plus petits */
+        max-width: 90%; /* Mais limiter à 90% de la largeur de l'écran */
+        margin: 10px auto; /* Les centrer horizontalement */
+        display: block; /* Les afficher comme des éléments de bloc */
+    }
+    .central-content-area {
+        margin: 0; /* Supprimer la marge horizontale car les publicités latérales sont maintenant empilées */
+        width: 100%; /* Prendre toute la largeur */
+    }
+    .container {
+        width: 95%; /* Ajuster la largeur du conteneur pour les écrans plus petits si nécessaire */
+        margin: 10px auto; /* Ajouter une marge verticale pour séparer des publicités haut/bas */
+    }
+}
+
+/* Autres ajustements pour les très petits écrans */
+@media (max-width: 600px) {
+    .left-ad, .right-ad, .top-ad, .bottom-ad {
+        width: 100%; /* Toutes les publicités prennent toute la largeur */
+        max-width: 100%;
+        margin: 5px auto;
+    }
+    .ad-container {
+        padding: 5px;
+        min-height: 80px;
     }
 }

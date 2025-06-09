@@ -348,6 +348,14 @@
     </style>
 </head>
 <body>
+    <!-- Background Music Playlist -->
+    <audio id="background-music-playlist" autoplay loop muted style="display: none;">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" type="audio/mpeg">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" type="audio/mpeg">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" type="audio/mpeg">
+        Votre navigateur ne supporte pas l'élément audio.
+    </audio>
+
     <div class="container">
         <div id="auth-container">
             <h2>Bienvenue au JEWBUZZ PRIME CASINO !</h2>
@@ -438,5 +446,36 @@
     <script src="blackjack.js"></script>
     <script src="chicken.js"></script>
     <script src="shop.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const musicPlayer = document.getElementById('background-music-playlist');
+
+            // Attempt to play muted audio on page load.
+            // This is generally allowed by browsers.
+            musicPlayer.play().catch(error => {
+                console.warn("Lecture automatique de la musique bloquée initialement par le navigateur (son coupé).", error);
+            });
+
+            // Add an event listener to the document body to detect the first user interaction
+            // and then attempt to unmute and play the music.
+            const unmuteOnFirstInteraction = () => {
+                if (musicPlayer.muted || musicPlayer.paused) {
+                    musicPlayer.muted = false; // Unmute the audio
+                    musicPlayer.play().then(() => {
+                        console.log("Musique lancée et démutée après la première interaction utilisateur.");
+                        // Remove the listener once the music starts playing
+                        document.body.removeEventListener('click', unmuteOnFirstInteraction);
+                        document.body.removeEventListener('touchend', unmuteOnFirstInteraction);
+                    }).catch(error => {
+                        console.error("Erreur lors de la tentative de lecture de la musique après interaction :", error);
+                    });
+                }
+            };
+
+            document.body.addEventListener('click', unmuteOnFirstInteraction);
+            document.body.addEventListener('touchend', unmuteOnFirstInteraction); // For touch devices
+        });
+    </script>
 </body>
 </html>

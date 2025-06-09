@@ -451,6 +451,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             const musicPlayer = document.getElementById('background-music-playlist');
 
+            // Set the volume to 4% (0.04)
+            musicPlayer.volume = 0.20;
+
             // Attempt to play muted audio on page load.
             // This is generally allowed by browsers.
             musicPlayer.play().catch(error => {
